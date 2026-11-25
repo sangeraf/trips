@@ -14,7 +14,7 @@ export function TimeInput({ value, onChange }: { value: string; onChange: (v: st
   const invalid = shown.trim() !== '' && normalizeTime(shown) === null
   return (
     <input
-      className={`${inputCls} ${invalid ? 'border-red-500' : ''}`}
+      className={`${inputCls} ${invalid ? '!border-red-500' : ''}`}
       inputMode="numeric"
       placeholder="óó:pp"
       value={shown}

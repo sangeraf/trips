@@ -201,7 +201,7 @@ export function TripForm({ initial, ds, onClose, onCopy }: Props) {
         </Field>
         <Field label={t('field.duration')}>
           <input
-            className={`${inputCls} ${durationInvalid ? 'border-red-500' : ''}`}
+            className={`${inputCls} ${durationInvalid ? '!border-red-500' : ''}`}
             inputMode="numeric"
             placeholder={computed !== null ? formatDuration(computed) : t('form.durationHint')}
             value={d.durationManual ? durationText : formatDuration(computed)}
