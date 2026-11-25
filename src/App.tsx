@@ -7,7 +7,7 @@ import type { Mode } from './db/types'
 import { startAutoSync, useSyncState } from './lib/autosync'
 import { todayIso } from './lib/text'
 import { useDataset } from './lib/useData'
-import { isConfigured, useSettings } from './store/settings'
+import { isConfigured, TEXT_SIZE_PX, useSettings } from './store/settings'
 import { PeopleView } from './views/PeopleView'
 import { SettingsView } from './views/SettingsView'
 import { StatsView } from './views/StatsView'
@@ -33,6 +33,10 @@ export default function App() {
   const [draft, setDraft] = useState<TripDraft | null>(null)
   const [chooser, setChooser] = useState(false)
   const [formKey, setFormKey] = useState(0)
+  const textSize = useSettings((s) => s.textSize)
+  useEffect(() => {
+    document.documentElement.style.fontSize = `${TEXT_SIZE_PX[textSize]}px`
+  }, [textSize])
   const state = useRef({ tab, draft, chooser })
   useEffect(() => {
     state.current = { tab, draft, chooser }

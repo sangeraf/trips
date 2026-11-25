@@ -15,7 +15,7 @@ export function BarList({ items, limit = 10, showKm, onClick }: { items: Agg[]; 
       {top.map((a) => (
         <div key={a.key} onClick={onClick && (() => onClick(a))} className={onClick ? 'cursor-pointer' : ''}>
           <div className="flex items-baseline justify-between gap-2 text-sm">
-            <span className="truncate font-medium">{a.label || '—'}</span>
+            <span className="min-w-0 break-words font-medium">{a.label || '—'}</span>
             <span className="shrink-0 text-slate-500">
               {a.count}× · {f.hours(a.minutes)}
               {showKm && a.km > 0 ? ` · ${f.km(a.km)}` : ''}

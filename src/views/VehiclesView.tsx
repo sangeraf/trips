@@ -107,14 +107,14 @@ function TypeDetail({ s, all, ds, onBack }: { s: TypeStats; all: TypeStats[]; ds
         <p className="text-xs text-slate-500">{t('vehicles.editTypeHint')}</p>
         <div className="grid grid-cols-2 gap-2">
           <Field label={t('field.manufacturer')}>
-            <input className={inputCls} value={manufacturer} onChange={(e) => setManufacturer(e.target.value)} />
+            <input className={inputCls} autoCapitalize="sentences" value={manufacturer} onChange={(e) => setManufacturer(e.target.value)} />
           </Field>
           <Field label={t('field.model')}>
-            <input className={inputCls} value={model} onChange={(e) => setModel(e.target.value)} />
+            <input className={inputCls} autoCapitalize="sentences" value={model} onChange={(e) => setModel(e.target.value)} />
           </Field>
           {isBus && (
             <Field label={t('field.bodyType')}>
-              <input className={inputCls} list="body-types" value={bodyText} onChange={(e) => setBodyText(e.target.value)} />
+              <input className={inputCls} autoCapitalize="sentences" list="body-types" value={bodyText} onChange={(e) => setBodyText(e.target.value)} />
               <datalist id="body-types">
                 {[...new Set(all.filter((o) => o.type.bodyType).map((o) => bodyTypeLabel(o.type.bodyType)).concat([t('bodyType.standard'), t('bodyType.articulated')]))].map((v) => (
                   <option key={v} value={v} />

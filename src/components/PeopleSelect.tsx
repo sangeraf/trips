@@ -63,7 +63,7 @@ export function PeopleSelect({ value, onChange, options, locked }: Props) {
         onPick={(o) => add(o.value)}
         onEnter={() => add(q)}
         placeholder={t('form.addPerson')}
-        autoCapitalize="words"
+        autoCapitalize="sentences"
         extra={(query) =>
           clean(query) && !options.some((o) => normalize(o.value) === normalize(query))
             ? { label: t('form.addNew', { name: clean(query) }), onPick: () => add(query) }

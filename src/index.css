@@ -5,6 +5,10 @@
 html {
   -webkit-tap-highlight-color: transparent;
 }
+input,
+textarea {
+  scroll-margin-top: 5rem;
+}
 body {
   @apply bg-slate-50 text-slate-900 dark:bg-slate-900 dark:text-slate-100;
 }

@@ -103,6 +103,8 @@ const hu: Messages = {
   },
   settings: {
     language: 'Nyelv',
+    textSize: 'Betűméret',
+    textSizes: { sm: 'Kicsi', md: 'Normál', lg: 'Nagy', xl: 'Nagyon nagy' },
     sync: 'GitHub szinkron',
     syncHelp:
       'Az utazások ezen az eszközön tárolódnak, és egy privát GitHub tárolóba szinkronizálódnak. Hozz létre egy fine-grained tokent, ami csak ehhez a tárolóhoz fér hozzá, „Contents: Read and write” jogosultsággal.',
