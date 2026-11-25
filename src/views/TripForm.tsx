@@ -7,7 +7,7 @@ import { btnCls, btnDangerCls, btnGhostCls, Field, inputCls, Segmented } from '.
 import { alive, deleteTrip, saveTrip, type TripDraft } from '../db/repo'
 import { BUS_BODY_TYPES, CAR_TYPES, CITY_TYPES, plateKind, vehicleSubtype, type Dataset } from '../db/types'
 import { bodyTypeFromText, bodyTypeLabel } from '../i18n'
-import { calcDuration, formatDuration, parseDuration } from '../lib/duration'
+import { calcDuration, formatDuration, parseDuration, parseTime } from '../lib/duration'
 import { peopleStats } from '../lib/stats'
 import { cityOptions, companyOptions, lineOptions, placeOptions, type Option } from '../lib/suggest'
 import { normalize } from '../lib/text'
@@ -94,8 +94,9 @@ export function TripForm({ initial, ds, onClose, onCopy }: Props) {
   }
 
   const durationInvalid = d.durationManual && d.durationMin === null
+  const timeInvalid = [d.departureTime, d.arrivalTime].some((v) => v !== '' && parseTime(v) === null)
   const submit = async () => {
-    if (durationInvalid) return
+    if (durationInvalid || timeInvalid) return
     setSaving(true)
     try {
       await saveTrip(d)
@@ -295,7 +296,7 @@ export function TripForm({ initial, ds, onClose, onCopy }: Props) {
               </button>
             </>
           )}
-          <button type="submit" className={`${btnCls} ml-auto`} disabled={saving || durationInvalid}>
+          <button type="submit" className={`${btnCls} ml-auto`} disabled={saving || durationInvalid || timeInvalid}>
             {t('common.save')}
           </button>
         </div>
