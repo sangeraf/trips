@@ -204,31 +204,6 @@ export function TripForm({ initial, ds, onClose, onCopy }: Props) {
         </div>
       )}
 
-      {d.mode === 'city' && d.transitType === 'commuter' && (
-                  <div className="grid grid-cols-2 gap-3">
-          <Field label={t('field.carriage')}>
-            <Autocomplete
-              value={carriageText}
-              onChange={(v) => {
-                setCarriageText(v)
-                set('carriage', carriageFromText(v))
-              }}
-              options={hev.carriages}
-            />
-          </Field>
-          <Field label={t('field.seatColor')}>
-            <Autocomplete
-              value={seatText}
-              onChange={(v) => {
-                setSeatText(v)
-                set('seatColor', seatColorFromText(v))
-              }}
-              options={hev.seatColors}
-            />
-          </Field>
-          </div>
-      )}
-
       {isPersonal && (
         <Field label={t('form.driver')}>
           <Autocomplete value={d.driver} onChange={(v) => set('driver', v)} options={people} autoCapitalize="sentences" />
@@ -329,6 +304,31 @@ export function TripForm({ initial, ds, onClose, onCopy }: Props) {
           </Field>
         </div>
       </fieldset>
+
+      {d.mode === 'city' && d.transitType === 'commuter' && (
+        <div className="grid grid-cols-2 gap-3">
+          <Field label={t('field.carriage')}>
+            <Autocomplete
+              value={carriageText}
+              onChange={(v) => {
+                setCarriageText(v)
+                set('carriage', carriageFromText(v))
+              }}
+              options={hev.carriages}
+            />
+          </Field>
+          <Field label={t('field.seatColor')}>
+            <Autocomplete
+              value={seatText}
+              onChange={(v) => {
+                setSeatText(v)
+                set('seatColor', seatColorFromText(v))
+              }}
+              options={hev.seatColors}
+            />
+          </Field>
+          </div>
+      )}
 
       <Field label={t('field.companions')}>
         <PeopleSelect
