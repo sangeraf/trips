@@ -60,7 +60,7 @@ const en = {
     distance: 'Car distance',
     byMode: 'By mode',
     bySubtype: 'By type',
-    bodyTypes: 'Bus body types',
+    bodyTypes: 'Body types',
     topLines: 'Most used lines',
     topCities: 'Cities',
     topRoutes: 'Most frequent routes',
@@ -101,6 +101,8 @@ const en = {
   },
   settings: {
     language: 'Language',
+    textSize: 'Text size',
+    textSizes: { sm: 'Small', md: 'Normal', lg: 'Large', xl: 'Extra large' },
     sync: 'GitHub sync',
     syncHelp:
       'Trips are stored on this device and synced to a private GitHub repository. Create a fine-grained token with access to that repository only and “Contents: Read and write” permission.',

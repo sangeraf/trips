@@ -111,9 +111,9 @@ export function TripList({ ds, onOpen }: { ds: Dataset; onOpen: (t: Trip) => voi
                 : [tr.city]
             return (
               <Card key={tr.id} onClick={() => onOpen(tr)}>
-                <div className="flex items-center gap-2">
+                <div className="flex items-start gap-2">
                   <TripBadge trip={tr} />
-                  <span className="truncate font-medium">{a || b ? `${a || '?'} → ${b || '?'}` : '—'}</span>
+                  <span className="min-w-0 break-words font-medium">{a || b ? `${a || '?'} → ${b || '?'}` : '—'}</span>
                 </div>
                 <div className="mt-1 flex flex-wrap gap-x-3 text-sm text-slate-500">
                   {times && <span>{times}</span>}

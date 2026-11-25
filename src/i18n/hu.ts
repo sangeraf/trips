@@ -62,7 +62,7 @@ const hu: Messages = {
     distance: 'Autós táv',
     byMode: 'Módok szerint',
     bySubtype: 'Típusok szerint',
-    bodyTypes: 'Buszkivitelek',
+    bodyTypes: 'Kivitelek',
     topLines: 'Leggyakoribb viszonylatok',
     topCities: 'Városok',
     topRoutes: 'Leggyakoribb útvonalak',
@@ -103,6 +103,8 @@ const hu: Messages = {
   },
   settings: {
     language: 'Nyelv',
+    textSize: 'Betűméret',
+    textSizes: { sm: 'Kicsi', md: 'Normál', lg: 'Nagy', xl: 'Nagyon nagy' },
     sync: 'GitHub szinkron',
     syncHelp:
       'Az utazások ezen az eszközön tárolódnak, és egy privát GitHub tárolóba szinkronizálódnak. Hozz létre egy fine-grained tokent, ami csak ehhez a tárolóhoz fér hozzá, „Contents: Read and write” jogosultsággal.',

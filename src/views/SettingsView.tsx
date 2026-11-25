@@ -8,7 +8,7 @@ import { syncNow, useSyncState } from '../lib/autosync'
 import { exportCsv, exportJson, parseBackup, saveFile } from '../lib/backup'
 import { repoInfo } from '../lib/github'
 import { todayIso } from '../lib/text'
-import { isConfigured, useSettings, type Lang } from '../store/settings'
+import { isConfigured, TEXT_SIZE_PX, useSettings, type Lang, type TextSize } from '../store/settings'
 
 export function SettingsView({ ds }: { ds: Dataset }) {
   const { t } = useTranslation()
@@ -52,6 +52,14 @@ export function SettingsView({ ds }: { ds: Dataset }) {
             { value: 'hu', label: 'Magyar' },
             { value: 'en', label: 'English' },
           ]}
+        />
+      </Section>
+
+      <Section title={t('settings.textSize')}>
+        <Segmented<TextSize>
+          value={s.textSize}
+          onChange={s.setTextSize}
+          options={(Object.keys(TEXT_SIZE_PX) as TextSize[]).map((v) => ({ value: v, label: t(`settings.textSizes.${v}`) }))}
         />
       </Section>
 

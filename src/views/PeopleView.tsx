@@ -72,7 +72,7 @@ function PersonDetail({ s, ds, onBack }: { s: PersonStats; ds: Dataset; onBack: 
       </Section>
       <Section title={t('common.edit')}>
         <Field label={t('people.name')}>
-          <input className={inputCls} value={name} onChange={(e) => setName(e.target.value)} />
+          <input className={inputCls} autoCapitalize="sentences" value={name} onChange={(e) => setName(e.target.value)} />
         </Field>
         <div className="flex gap-2">
           <button className={btnCls} disabled={!name.trim() || name === s.person.name} onClick={save}>

@@ -1,11 +1,11 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Autocomplete } from '../components/Autocomplete'
 import { PeopleSelect } from '../components/PeopleSelect'
 import { TimeInput } from '../components/TimeInput'
 import { btnCls, btnDangerCls, btnGhostCls, Field, inputCls, Segmented } from '../components/ui'
 import { alive, deleteTrip, saveTrip, type TripDraft } from '../db/repo'
-import { BUS_BODY_TYPES, CAR_TYPES, CITY_TYPES, plateKind, vehicleSubtype, type Dataset } from '../db/types'
+import { BUS_BODY_TYPES, CAR_TYPES, hasBodyType, CITY_TYPES, plateKind, vehicleSubtype, type Dataset } from '../db/types'
 import { bodyTypeFromText, bodyTypeLabel } from '../i18n'
 import { calcDuration, formatDuration, parseDuration, parseTime } from '../lib/duration'
 import { peopleStats } from '../lib/stats'
@@ -40,6 +40,27 @@ export function TripForm({ initial, ds, onClose, onCopy }: Props) {
   const [bodyText, setBodyText] = useState(bodyTypeLabel(initial.bodyType))
   const [saving, setSaving] = useState(false)
   const set = <K extends keyof TripDraft>(k: K, v: TripDraft[K]) => setD((s) => ({ ...s, [k]: v }))
+
+  // Opening the form must not pop up the keyboard: drop any focus the WebView gives a field without a tap.
+  useEffect(() => {
+    ;(document.activeElement as HTMLElement | null)?.blur()
+    let tapped = false
+    const onDown = () => (tapped = true)
+    const onFocus = (e: FocusEvent) => {
+      if (!tapped) (e.target as HTMLElement).blur()
+    }
+    document.addEventListener('pointerdown', onDown, true)
+    document.addEventListener('focusin', onFocus, true)
+    const stop = setTimeout(() => {
+      document.removeEventListener('pointerdown', onDown, true)
+      document.removeEventListener('focusin', onFocus, true)
+    }, 800)
+    return () => {
+      clearTimeout(stop)
+      document.removeEventListener('pointerdown', onDown, true)
+      document.removeEventListener('focusin', onFocus, true)
+    }
+  }, [])
 
   const trips = ds.trips
   const computed = calcDuration(d.departureTime, d.arrivalTime)
@@ -153,7 +174,7 @@ export function TripForm({ initial, ds, onClose, onCopy }: Props) {
       {(d.mode === 'city' || isTaxi) && (
         <div className="grid grid-cols-2 gap-3">
           <Field label={t('field.city')} className={d.mode === 'city' ? '' : ''}>
-            <Autocomplete value={d.city} onChange={(v) => set('city', v)} options={cities} autoCapitalize="words" />
+            <Autocomplete value={d.city} onChange={(v) => set('city', v)} options={cities} autoCapitalize="sentences" />
           </Field>
           {d.mode === 'city' ? (
             <Field label={t('field.line')}>
@@ -169,7 +190,7 @@ export function TripForm({ initial, ds, onClose, onCopy }: Props) {
 
       {isPersonal && (
         <Field label={t('form.driver')}>
-          <Autocomplete value={d.driver} onChange={(v) => set('driver', v)} options={people} autoCapitalize="words" />
+          <Autocomplete value={d.driver} onChange={(v) => set('driver', v)} options={people} autoCapitalize="sentences" />
         </Field>
       )}
 
@@ -179,7 +200,7 @@ export function TripForm({ initial, ds, onClose, onCopy }: Props) {
             value={d.mode === 'car' ? d.startPlace : d.from}
             onChange={(v) => set(d.mode === 'car' ? 'startPlace' : 'from', v)}
             options={places}
-            autoCapitalize="words"
+            autoCapitalize="sentences"
           />
         </Field>
         <Field label={t(d.mode === 'car' ? 'field.endPlace' : 'field.to')}>
@@ -187,7 +208,7 @@ export function TripForm({ initial, ds, onClose, onCopy }: Props) {
             value={d.mode === 'car' ? d.endPlace : d.to}
             onChange={(v) => set(d.mode === 'car' ? 'endPlace' : 'to', v)}
             options={places}
-            autoCapitalize="words"
+            autoCapitalize="sentences"
           />
         </Field>
       </div>
@@ -239,8 +260,8 @@ export function TripForm({ initial, ds, onClose, onCopy }: Props) {
             <Autocomplete value={d.model} onChange={(v) => set('model', v)} options={vehicle.models} />
           </Field>
         </div>
-        <div className={subtype === 'bus' ? 'grid grid-cols-2 gap-3' : ''}>
-          {subtype === 'bus' && (
+        <div className={hasBodyType(subtype) ? 'grid grid-cols-2 gap-3' : ''}>
+          {hasBodyType(subtype) && (
             <Field label={t('field.bodyType')}>
               <Autocomplete
                 value={bodyText}
@@ -278,11 +299,11 @@ export function TripForm({ initial, ds, onClose, onCopy }: Props) {
       </Field>
 
       <Field label={t('field.notes')}>
-        <textarea className={inputCls} rows={3} value={d.notes} onChange={(e) => set('notes', e.target.value)} />
+        <textarea className={inputCls} autoCapitalize="sentences" rows={3} value={d.notes} onChange={(e) => set('notes', e.target.value)} />
       </Field>
 
       <div className="fixed inset-x-0 bottom-0 z-30 border-t border-slate-200 bg-white/95 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur dark:border-slate-700 dark:bg-slate-900/95">
-        <div className="mx-auto flex max-w-2xl gap-2">
+        <div className="mx-auto flex max-w-2xl flex-wrap gap-2">
           <button type="button" className={btnGhostCls} onClick={onClose}>
             {t('common.cancel')}
           </button>

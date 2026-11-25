@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { BarList, StatTiles } from '../components/BarList'
 import { btnCls, btnDangerCls, btnGhostCls, Card, Empty, Field, inputCls, Section, Segmented } from '../components/ui'
 import { deleteRecord, findTypeCollision, findUnitCollision, updateVehicleType, updateVehicleUnit } from '../db/repo'
-import { CITY_TYPES, plateKind, type Dataset, type Mode } from '../db/types'
+import { CITY_TYPES, hasBodyType, plateKind, type Dataset, type Mode } from '../db/types'
 import { bodyTypeFromText, bodyTypeLabel, useFormat } from '../i18n'
 import { vehicleStats, type TypeStats, type UnitStats } from '../lib/stats'
 
@@ -62,7 +62,7 @@ function TypeDetail({ s, all, ds, onBack }: { s: TypeStats; all: TypeStats[]; ds
   const [manufacturer, setManufacturer] = useState(s.type.manufacturer)
   const [model, setModel] = useState(s.type.model)
   const [bodyText, setBodyText] = useState(bodyTypeLabel(s.type.bodyType))
-  const isBus = s.type.subtype === 'bus'
+  const isBus = hasBodyType(s.type.subtype)
   const bodyType = isBus ? bodyTypeFromText(bodyText) : ''
   const dirty = manufacturer !== s.type.manufacturer || model !== s.type.model || bodyType !== s.type.bodyType
   const kind = plateKind(s.type.mode, s.type.subtype)
@@ -107,14 +107,14 @@ function TypeDetail({ s, all, ds, onBack }: { s: TypeStats; all: TypeStats[]; ds
         <p className="text-xs text-slate-500">{t('vehicles.editTypeHint')}</p>
         <div className="grid grid-cols-2 gap-2">
           <Field label={t('field.manufacturer')}>
-            <input className={inputCls} value={manufacturer} onChange={(e) => setManufacturer(e.target.value)} />
+            <input className={inputCls} autoCapitalize="sentences" value={manufacturer} onChange={(e) => setManufacturer(e.target.value)} />
           </Field>
           <Field label={t('field.model')}>
-            <input className={inputCls} value={model} onChange={(e) => setModel(e.target.value)} />
+            <input className={inputCls} autoCapitalize="sentences" value={model} onChange={(e) => setModel(e.target.value)} />
           </Field>
           {isBus && (
             <Field label={t('field.bodyType')}>
-              <input className={inputCls} list="body-types" value={bodyText} onChange={(e) => setBodyText(e.target.value)} />
+              <input className={inputCls} autoCapitalize="sentences" list="body-types" value={bodyText} onChange={(e) => setBodyText(e.target.value)} />
               <datalist id="body-types">
                 {[...new Set(all.filter((o) => o.type.bodyType).map((o) => bodyTypeLabel(o.type.bodyType)).concat([t('bodyType.standard'), t('bodyType.articulated')]))].map((v) => (
                   <option key={v} value={v} />

@@ -24,7 +24,7 @@ export function Autocomplete<T>({
   onPick,
   placeholder,
   inputMode,
-  autoCapitalize,
+  autoCapitalize = 'sentences',
   onEnter,
   clearOnPick,
   extra,
@@ -110,7 +110,7 @@ export function Autocomplete<T>({
             >
               {it.o ? (
                 <>
-                  <span className="truncate">
+                  <span className="min-w-0 break-words">
                     {it.o.value}
                     {it.o.label && <span className="ml-2 text-sm text-slate-500">{it.o.label}</span>}
                   </span>
