@@ -17,7 +17,6 @@ export function TimeInput({ value, onChange }: { value: string; onChange: (v: st
       className={`${inputCls} ${invalid ? 'border-red-500' : ''}`}
       inputMode="numeric"
       placeholder="óó:pp"
-      maxLength={5}
       value={shown}
       onChange={(e) => {
         const v = e.target.value
