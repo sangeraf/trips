@@ -5,7 +5,7 @@ import { Card, Field, inputCls, Section, Segmented } from '../components/ui'
 import { hasBodyType, type Dataset, type Mode } from '../db/types'
 import { bodyTypeLabel, useFormat } from '../i18n'
 import { byMonth, filterTrips, groupBy, lineKey, one, placeKeys, routeKey, subtypeOf, summarize } from '../lib/stats'
-import { todayIso } from '../lib/text'
+import { normalize, todayIso } from '../lib/text'
 
 type Preset = 'all' | 'year' | 'month' | 'd30' | 'custom'
 
@@ -37,7 +37,7 @@ export function StatsView({ ds }: { ds: Dataset }) {
         if (x.mode !== 'city' || !hasBodyType(x.transitType) || !x.vehicleUnitId) return null
         const vt = types.get(unitType.get(x.vehicleUnitId) ?? '')
         return vt?.bodyType
-          ? one(`${x.transitType}|${vt.bodyType}`, `${t(`cityTypeShort.${x.transitType}`)} · ${bodyTypeLabel(vt.bodyType)}`)
+          ? one(`${x.transitType}|${normalize(vt.bodyType)}`, `${t(`cityTypeShort.${x.transitType}`)} · ${bodyTypeLabel(vt.bodyType)}`)
           : null
       }),
       total: summarize(trips),
