@@ -29,7 +29,7 @@ Repo secrets (Settings → Secrets and variables → Actions):
 - `ANDROID_KEYSTORE_PASSWORD`: its password.
 
 Keep a private backup of the keystore: an APK signed with a different key can't update the installed app.
-Without the secrets, CI falls back to a throwaway debug key.
+Without the secrets, and for pull-request builds, CI falls back to a throwaway debug key.
 
 ## Develop
 
