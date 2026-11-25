@@ -5,16 +5,37 @@ import { btnCls, btnDangerCls, btnGhostCls, Card, Empty, Field, inputCls, Sectio
 import { deleteRecord, findTypeCollision, findUnitCollision, updateVehicleType, updateVehicleUnit } from '../db/repo'
 import { CITY_TYPES, hasBodyType, plateKind, type Dataset, type Mode } from '../db/types'
 import { bodyTypeFromText, bodyTypeLabel, carriageLabel, seatColorLabel, useFormat } from '../i18n'
-import { vehicleStats, type TypeStats, type UnitStats } from '../lib/stats'
+import { vehicleStats, type Agg, type TypeStats, type UnitStats } from '../lib/stats'
+
+type SortBy = 'abc' | 'count' | 'time'
+
+/** A–Z ascending (unnamed last), or count / time descending. */
+function sortAgg<T extends Agg>(list: T[], by: SortBy): T[] {
+  const cmp: Record<SortBy, (a: T, b: T) => number> = {
+    abc: (a, b) => (!a.label ? 1 : 0) - (!b.label ? 1 : 0) || a.label.localeCompare(b.label, undefined, { numeric: true }),
+    count: (a, b) => b.count - a.count || b.minutes - a.minutes,
+    time: (a, b) => b.minutes - a.minutes || b.count - a.count,
+  }
+  return [...list].sort(cmp[by])
+}
+
+function SortToggle({ value, onChange }: { value: SortBy; onChange: (v: SortBy) => void }) {
+  const { t } = useTranslation()
+  return (
+    <Segmented value={value} onChange={onChange} options={(['abc', 'count', 'time'] as SortBy[]).map((v) => ({ value: v, label: t(`vehicles.sort.${v}`) }))} />
+  )
+}
 
 export function VehiclesView({ ds }: { ds: Dataset }) {
   const { t } = useTranslation()
   const f = useFormat()
   const [mode, setMode] = useState<Mode>('city')
   const [openId, setOpenId] = useState<string | null>(null)
+  const [typeSort, setTypeSort] = useState<SortBy>('count')
+  const [unitSort, setUnitSort] = useState<SortBy>('count')
   const stats = useMemo(() => vehicleStats(ds), [ds])
   const open = stats.find((s) => s.type.id === openId)
-  if (open) return <TypeDetail s={open} all={stats} ds={ds} onBack={() => setOpenId(null)} />
+  if (open) return <TypeDetail s={open} all={stats} ds={ds} sort={unitSort} onSort={setUnitSort} onBack={() => setOpenId(null)} />
 
   const subtypes = mode === 'city' ? CITY_TYPES : ['']
   const ofMode = stats.filter((s) => s.type.mode === mode)
@@ -28,9 +49,13 @@ export function VehiclesView({ ds }: { ds: Dataset }) {
           { value: 'car' as const, label: t('mode.car') },
         ]}
       />
+      {ofMode.length > 0 && <SortToggle value={typeSort} onChange={setTypeSort} />}
       {!ofMode.length && <Empty>{t('vehicles.empty')}</Empty>}
       {subtypes.map((sub) => {
-        const list = ofMode.filter((s) => s.type.subtype === sub)
+        const list = sortAgg(
+          ofMode.filter((s) => s.type.subtype === sub),
+          typeSort,
+        )
         if (!list.length) return null
         return (
           <Section key={sub} title={sub ? t(`cityType.${sub}`) : t('mode.car')}>
@@ -56,7 +81,21 @@ export function VehiclesView({ ds }: { ds: Dataset }) {
   )
 }
 
-function TypeDetail({ s, all, ds, onBack }: { s: TypeStats; all: TypeStats[]; ds: Dataset; onBack: () => void }) {
+function TypeDetail({
+  s,
+  all,
+  ds,
+  sort,
+  onSort,
+  onBack,
+}: {
+  s: TypeStats
+  all: TypeStats[]
+  ds: Dataset
+  sort: SortBy
+  onSort: (v: SortBy) => void
+  onBack: () => void
+}) {
   const { t } = useTranslation()
   const f = useFormat()
   const [manufacturer, setManufacturer] = useState(s.type.manufacturer)
@@ -142,7 +181,8 @@ function TypeDetail({ s, all, ds, onBack }: { s: TypeStats; all: TypeStats[]; ds
       </Section>
 
       <Section title={t(`vehicles.${kind}s`)}>
-        {s.units.map((u) => (
+        {s.units.length > 0 && <SortToggle value={sort} onChange={onSort} />}
+        {sortAgg(s.units, sort).map((u) => (
           <UnitRow key={u.key} u={u} ds={ds} siblings={siblings} kind={kind} />
         ))}
       </Section>

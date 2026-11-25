@@ -89,6 +89,7 @@ const en = {
   vehicles: {
     empty: 'No vehicles yet. They appear here once you enter one in a trip.',
     unknownType: 'Unknown type',
+    sort: { abc: 'A–Z', count: 'Count', time: 'Time' },
     licenceCount_one: '{{count}} licence plate',
     licenceCount_other: '{{count}} licence plates',
     regCount_one: '{{count}} reg. number',

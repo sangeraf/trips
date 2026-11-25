@@ -91,6 +91,7 @@ const hu: Messages = {
   vehicles: {
     empty: 'Még nincs jármű. Itt jelennek meg, amint megadsz egyet egy utazásnál.',
     unknownType: 'Ismeretlen típus',
+    sort: { abc: 'ABC', count: 'Darabszám', time: 'Idő' },
     licenceCount_one: '{{count}} rendszám',
     licenceCount_other: '{{count}} rendszám',
     regCount_one: '{{count}} pályaszám',
