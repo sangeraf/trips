@@ -61,6 +61,7 @@ const hu: Messages = {
   list: { empty: 'Még nincs utazás. Koppints a + gombra.', noMatch: 'Nincs a szűrésnek megfelelő utazás.' },
   stats: {
     none: 'Nincs adat',
+    rankBy: { count: 'Darabszám szerint', time: 'Idő szerint' },
     trips: 'Utazás',
     time: 'Idő',
     distance: 'Autós táv',

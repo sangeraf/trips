@@ -59,6 +59,7 @@ const en = {
   list: { empty: 'No trips yet. Tap + to add one.', noMatch: 'No trips match the filter.' },
   stats: {
     none: 'No data',
+    rankBy: { count: 'By count', time: 'By time' },
     trips: 'Trips',
     time: 'Time',
     distance: 'Car distance',

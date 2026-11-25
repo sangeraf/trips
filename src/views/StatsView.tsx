@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { BarList, StatTiles } from '../components/BarList'
+import { BarList, StatTiles, type RankBy } from '../components/BarList'
 import { Card, Field, inputCls, Section, Segmented } from '../components/ui'
 import { hasBodyType, type Dataset, type Mode } from '../db/types'
 import { bodyTypeLabel, carriageLabel, seatColorLabel, useFormat } from '../i18n'
@@ -24,6 +24,7 @@ export function StatsView({ ds }: { ds: Dataset }) {
   const [preset, setPreset] = useState<Preset>('all')
   const [custom, setCustom] = useState({ from: '', to: '' })
   const [mode, setMode] = useState<Mode | ''>('')
+  const [rank, setRank] = useState<RankBy>('count')
   const { from, to } = preset === 'custom' ? custom : presetRange(preset)
 
   const s = useMemo(() => {
@@ -93,6 +94,11 @@ export function StatsView({ ds }: { ds: Dataset }) {
             { value: 'car' as const, label: t('mode.car') },
           ]}
         />
+        <Segmented
+          value={rank}
+          onChange={setRank}
+          options={(['count', 'time'] as RankBy[]).map((r) => ({ value: r, label: t(`stats.rankBy.${r}`) }))}
+        />
       </div>
 
       <StatTiles
@@ -105,46 +111,46 @@ export function StatsView({ ds }: { ds: Dataset }) {
 
       {!mode && (
         <Section title={t('stats.byMode')}>
-          <BarList items={s.modes} showKm />
+          <BarList by={rank} items={s.modes} showKm />
         </Section>
       )}
       <Section title={t('stats.bySubtype')}>
-        <BarList items={s.subtypes} showKm />
+        <BarList by={rank} items={s.subtypes} showKm />
       </Section>
       {mode !== 'car' && (
         <>
           <Section title={t('stats.topLines')}>
-            <BarList items={s.lines} />
+            <BarList by={rank} items={s.lines} />
           </Section>
           <Section title={t('stats.topCities')}>
-            <BarList items={s.cities} limit={5} />
+            <BarList by={rank} items={s.cities} limit={5} />
           </Section>
           {s.bodyTypes.length > 0 && (
             <Section title={t('stats.bodyTypes')}>
-              <BarList items={s.bodyTypes} />
+              <BarList by={rank} items={s.bodyTypes} />
             </Section>
           )}
           {s.carriages.length > 0 && (
             <Section title={t('stats.carriages')}>
-              <BarList items={s.carriages} />
+              <BarList by={rank} items={s.carriages} />
             </Section>
           )}
           {s.seatColors.length > 0 && (
             <Section title={t('stats.seatColors')}>
-              <BarList items={s.seatColors} />
+              <BarList by={rank} items={s.seatColors} />
             </Section>
           )}
         </>
       )}
       <Section title={t('stats.topRoutes')}>
-        <BarList items={s.routes} showKm />
+        <BarList by={rank} items={s.routes} showKm />
       </Section>
       <Section title={t('stats.topPlaces')}>
-        <BarList items={s.places} />
+        <BarList items={s.places} countOnly />
       </Section>
       {mode !== 'city' && s.companies.length > 0 && (
         <Section title={t('stats.taxiCompanies')}>
-          <BarList items={s.companies} showKm />
+          <BarList by={rank} items={s.companies} showKm />
         </Section>
       )}
       <Section title={t('stats.perMonth')}>
