@@ -36,7 +36,7 @@ export function SettingsView({ ds }: { ds: Dataset }) {
     try {
       const merged = await mergeIntoLocal(parseBackup(await file.text()))
       setImportMsg(t('settings.imported', { count: merged.trips.filter((x) => !x.deleted).length }))
-      void syncNow()
+      if (s.autoSync) void syncNow()
     } catch (e) {
       setImportMsg(e instanceof Error ? e.message : String(e))
     }
