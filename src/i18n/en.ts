@@ -1,5 +1,5 @@
 const en = {
-  app: { title: 'Trips', newCity: 'City transport', newCar: 'Car', newTrip: 'New trip' },
+  app: { title: 'Trips', newCity: 'City transport', newCar: 'Car', newTrip: 'New trip', editTrip: 'Edit trip' },
   nav: { trips: 'Trips', stats: 'Statistics', vehicles: 'Vehicles', people: 'People', settings: 'Settings' },
   common: {
     cancel: 'Cancel',

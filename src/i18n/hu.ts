@@ -1,7 +1,7 @@
 import type { Messages } from './en'
 
 const hu: Messages = {
-  app: { title: 'Utazások', newCity: 'Városi közlekedés', newCar: 'Autó', newTrip: 'Új utazás' },
+  app: { title: 'Utazások', newCity: 'Városi közlekedés', newCar: 'Autó', newTrip: 'Új utazás', editTrip: 'Utazás szerkesztése' },
   nav: { trips: 'Utazások', stats: 'Statisztika', vehicles: 'Járművek', people: 'Személyek', settings: 'Beállítások' },
   common: {
     cancel: 'Mégse',

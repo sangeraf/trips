@@ -62,7 +62,7 @@ export default function App() {
   return (
     <div className="mx-auto min-h-screen max-w-2xl">
       <header className="sticky top-0 z-20 flex items-center justify-between bg-teal-700 px-4 pb-3 pt-[max(0.75rem,env(safe-area-inset-top))] text-white shadow">
-        <span className="text-lg font-semibold">{draft ? t('app.newTrip') : t(`nav.${tab}`)}</span>
+        <span className="text-lg font-semibold">{draft ? t(draft.id ? 'app.editTrip' : 'app.newTrip') : t(`nav.${tab}`)}</span>
         <SyncDot />
       </header>
 
