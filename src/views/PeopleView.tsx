@@ -1,16 +1,18 @@
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { StatTiles } from '../components/BarList'
+import { SortToggle } from '../components/SortToggle'
 import { btnCls, btnDangerCls, btnGhostCls, Card, Empty, Field, inputCls, Section } from '../components/ui'
 import { deleteRecord, findPersonCollision, renamePerson } from '../db/repo'
 import type { Dataset } from '../db/types'
 import { useFormat } from '../i18n'
-import { peopleStats, type PersonStats } from '../lib/stats'
+import { peopleStats, sortAgg, type PersonStats, type SortBy } from '../lib/stats'
 
 export function PeopleView({ ds }: { ds: Dataset }) {
   const { t } = useTranslation()
   const f = useFormat()
   const [openId, setOpenId] = useState<string | null>(null)
+  const [sort, setSort] = useState<SortBy>('count')
   const stats = useMemo(() => peopleStats(ds.trips, ds.people), [ds.trips, ds.people])
   const open = stats.find((s) => s.person.id === openId)
 
@@ -18,7 +20,8 @@ export function PeopleView({ ds }: { ds: Dataset }) {
   if (!stats.length) return <Empty>{t('people.empty')}</Empty>
   return (
     <div className="space-y-2">
-      {stats.map((s) => (
+      <SortToggle value={sort} onChange={setSort} />
+      {sortAgg(stats, sort).map((s) => (
         <Card key={s.key} onClick={() => setOpenId(s.person.id)}>
           <div className="flex items-baseline justify-between gap-2">
             <span className="font-medium">{s.person.name}</span>

@@ -1,30 +1,12 @@
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { BarList, StatTiles } from '../components/BarList'
+import { SortToggle } from '../components/SortToggle'
 import { btnCls, btnDangerCls, btnGhostCls, Card, Empty, Field, inputCls, Section, Segmented } from '../components/ui'
 import { deleteRecord, findTypeCollision, findUnitCollision, updateVehicleType, updateVehicleUnit } from '../db/repo'
 import { CITY_TYPES, hasBodyType, plateKind, type Dataset, type Mode } from '../db/types'
-import i18n, { bodyTypeFromText, bodyTypeLabel, carriageLabel, seatColorLabel, useFormat } from '../i18n'
-import { vehicleStats, type Agg, type TypeStats, type UnitStats } from '../lib/stats'
-
-type SortBy = 'abc' | 'count' | 'time'
-
-/** A–Z ascending (unnamed last), or count / time descending. */
-function sortAgg<T extends Agg>(list: T[], by: SortBy): T[] {
-  const cmp: Record<SortBy, (a: T, b: T) => number> = {
-    abc: (a, b) => (!a.label ? 1 : 0) - (!b.label ? 1 : 0) || a.label.localeCompare(b.label, i18n.language, { numeric: true }),
-    count: (a, b) => b.count - a.count || b.minutes - a.minutes,
-    time: (a, b) => b.minutes - a.minutes || b.count - a.count,
-  }
-  return [...list].sort(cmp[by])
-}
-
-function SortToggle({ value, onChange }: { value: SortBy; onChange: (v: SortBy) => void }) {
-  const { t } = useTranslation()
-  return (
-    <Segmented value={value} onChange={onChange} options={(['abc', 'count', 'time'] as SortBy[]).map((v) => ({ value: v, label: t(`vehicles.sort.${v}`) }))} />
-  )
-}
+import { bodyTypeFromText, bodyTypeLabel, carriageLabel, seatColorLabel, useFormat } from '../i18n'
+import { sortAgg, vehicleStats, type SortBy, type TypeStats, type UnitStats } from '../lib/stats'
 
 export function VehiclesView({ ds }: { ds: Dataset }) {
   const { t } = useTranslation()

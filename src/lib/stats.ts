@@ -1,4 +1,5 @@
 import type { Dataset, Mode, Person, Trip, VehicleType, VehicleUnit } from '../db/types'
+import i18n from 'i18next'
 import { normalize } from './text'
 
 export interface Filter {
@@ -155,4 +156,16 @@ export function vehicleStats(ds: Pick<Dataset, 'trips' | 'vehicleTypes' | 'vehic
       }
     })
     .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label))
+}
+
+export type SortBy = 'abc' | 'count' | 'time'
+
+/** A–Z ascending (unnamed last), or count / time descending. */
+export function sortAgg<T extends Agg>(list: T[], by: SortBy): T[] {
+  const cmp: Record<SortBy, (a: T, b: T) => number> = {
+    abc: (a, b) => (!a.label ? 1 : 0) - (!b.label ? 1 : 0) || a.label.localeCompare(b.label, i18n.language, { numeric: true }),
+    count: (a, b) => b.count - a.count || b.minutes - a.minutes,
+    time: (a, b) => b.minutes - a.minutes || b.count - a.count,
+  }
+  return [...list].sort(cmp[by])
 }
