@@ -1,4 +1,5 @@
 import type { Dataset, Mode, Person, Trip, VehicleType, VehicleUnit } from '../db/types'
+import { normalize } from './text'
 
 export interface Filter {
   from: string
@@ -106,6 +107,9 @@ export function peopleStats(trips: Trip[], people: Person[]): PersonStats[] {
 
 export interface UnitStats extends Agg {
   unit: VehicleUnit
+  /** HÉV only, labels are the stored values. */
+  carriages: Agg[]
+  seatColors: Agg[]
 }
 
 export interface TypeStats extends Agg {
@@ -128,7 +132,17 @@ export function vehicleStats(ds: Pick<Dataset, 'trips' | 'vehicleTypes' | 'vehic
     .map((type) => {
       const units = ds.vehicleUnits
         .filter((u) => !u.deleted && u.vehicleTypeId === type.id)
-        .map((unit) => ({ ...summarize(byUnit.get(unit.id) ?? []), key: unit.id, label: unit.licence, unit }))
+        .map((unit) => {
+          const list = byUnit.get(unit.id) ?? []
+          return {
+            ...summarize(list),
+            key: unit.id,
+            label: unit.licence,
+            unit,
+            carriages: groupBy(list, (t) => (t.mode === 'city' && t.carriage ? one(normalize(t.carriage), t.carriage) : null)),
+            seatColors: groupBy(list, (t) => (t.mode === 'city' && t.seatColor ? one(normalize(t.seatColor), t.seatColor) : null)),
+          }
+        })
         .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label))
       const typeTrips = units.flatMap((u) => byUnit.get(u.unit.id) ?? [])
       return {

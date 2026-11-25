@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, Empty, inputCls } from '../components/ui'
 import { CAR_TYPES, CITY_TYPES, type Dataset, type Mode, type Trip } from '../db/types'
-import { bodyTypeLabel, useFormat } from '../i18n'
+import { bodyTypeLabel, carriageLabel, seatColorLabel, useFormat } from '../i18n'
 import { formatDuration } from '../lib/duration'
 import { subtypeOf } from '../lib/stats'
 import { normalize } from '../lib/text'
@@ -108,7 +108,11 @@ export function TripList({ ds, onOpen }: { ds: Dataset; onOpen: (t: Trip) => voi
             const extra =
               tr.mode === 'car'
                 ? [tr.carType === 'taxi' ? tr.company : tr.driverId && people.get(tr.driverId), tr.distanceKm ? f.km(tr.distanceKm) : '']
-                : [tr.city]
+                : [
+                    tr.city,
+                    tr.carriage && carriageLabel(tr.carriage),
+                    tr.seatColor && seatColorLabel(tr.seatColor),
+                  ]
             return (
               <Card key={tr.id} onClick={() => onOpen(tr)}>
                 <div className="flex items-start gap-2">

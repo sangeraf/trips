@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { BarList, StatTiles } from '../components/BarList'
 import { Card, Field, inputCls, Section, Segmented } from '../components/ui'
 import { hasBodyType, type Dataset, type Mode } from '../db/types'
-import { bodyTypeLabel, useFormat } from '../i18n'
+import { bodyTypeLabel, carriageLabel, seatColorLabel, useFormat } from '../i18n'
 import { byMonth, filterTrips, groupBy, lineKey, one, placeKeys, routeKey, subtypeOf, summarize } from '../lib/stats'
 import { normalize, todayIso } from '../lib/text'
 
@@ -40,6 +40,12 @@ export function StatsView({ ds }: { ds: Dataset }) {
           ? one(`${x.transitType}|${normalize(vt.bodyType)}`, `${t(`cityTypeShort.${x.transitType}`)} · ${bodyTypeLabel(vt.bodyType)}`)
           : null
       }),
+      carriages: groupBy(city, (x) =>
+        x.mode === 'city' && x.transitType === 'commuter' && x.carriage ? one(normalize(x.carriage), carriageLabel(x.carriage)) : null,
+      ),
+      seatColors: groupBy(city, (x) =>
+        x.mode === 'city' && x.transitType === 'commuter' && x.seatColor ? one(normalize(x.seatColor), seatColorLabel(x.seatColor)) : null,
+      ),
       total: summarize(trips),
       modes: groupBy(trips, (x) => one(x.mode, t(`mode.${x.mode}`))),
       subtypes: groupBy(trips, (x) =>
@@ -116,6 +122,16 @@ export function StatsView({ ds }: { ds: Dataset }) {
           {s.bodyTypes.length > 0 && (
             <Section title={t('stats.bodyTypes')}>
               <BarList items={s.bodyTypes} />
+            </Section>
+          )}
+          {s.carriages.length > 0 && (
+            <Section title={t('stats.carriages')}>
+              <BarList items={s.carriages} />
+            </Section>
+          )}
+          {s.seatColors.length > 0 && (
+            <Section title={t('stats.seatColors')}>
+              <BarList items={s.seatColors} />
             </Section>
           )}
         </>

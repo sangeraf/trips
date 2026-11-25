@@ -18,6 +18,8 @@ const hu: Messages = {
   cityType: { metro: 'Metró', tram: 'Villamos', trolleybus: 'Trolibusz', bus: 'Busz', commuter: 'HÉV' },
   cityTypeShort: { metro: 'Metró', tram: 'Villamos', trolleybus: 'Troli', bus: 'Busz', commuter: 'HÉV' },
   bodyType: { standard: 'Szóló', articulated: 'Csuklós' },
+  seatColor: { brown: 'Barna', red: 'Vörös', blue: 'Kék', mav: 'MÁV', new: 'Új' },
+  carriageN: '{{n}}. kocsi',
   field: {
     date: 'Dátum',
     carType: 'Típus',
@@ -41,6 +43,8 @@ const hu: Messages = {
     reg: 'Pályaszám',
     companions: 'Útitársak',
     notes: 'Megjegyzés',
+    carriage: 'Kocsi',
+    seatColor: 'Ülés színe',
   },
   form: {
     newTitle: 'Új utazás – {{mode}}',
@@ -68,6 +72,8 @@ const hu: Messages = {
     topRoutes: 'Leggyakoribb útvonalak',
     topPlaces: 'Leggyakoribb helyek',
     taxiCompanies: 'Taxitársaságok',
+    carriages: 'HÉV kocsik',
+    seatColors: 'HÉV ülésszínek',
     perMonth: 'Utazások havonta',
     from: 'Ettől',
     to: 'Eddig',

@@ -1,7 +1,7 @@
 import i18n from 'i18next'
 import { useMemo } from 'react'
 import { initReactI18next, useTranslation } from 'react-i18next'
-import { BUS_BODY_TYPES } from '../db/types'
+import { BUS_BODY_TYPES, SEAT_COLORS } from '../db/types'
 import { clean, normalize } from '../lib/text'
 import { useSettings } from '../store/settings'
 import en from './en'
@@ -36,6 +36,24 @@ export function bodyTypeFromText(text: string): string {
     (k) => n === k || n === normalize(en.bodyType[k as keyof typeof en.bodyType]) || n === normalize(hu.bodyType[k as keyof typeof hu.bodyType]),
   )
   return builtIn ?? clean(text)
+}
+
+/** HÉV seat colours: built-in keys show translated, custom values as typed. */
+export function seatColorLabel(stored: string): string {
+  return SEAT_COLORS.includes(stored) ? i18n.t(`seatColor.${stored}`) : stored
+}
+
+export function seatColorFromText(text: string): string {
+  const n = normalize(text)
+  const builtIn = SEAT_COLORS.find(
+    (k) => n === k || n === normalize(en.seatColor[k as keyof typeof en.seatColor]) || n === normalize(hu.seatColor[k as keyof typeof hu.seatColor]),
+  )
+  return builtIn ?? clean(text)
+}
+
+/** Numeric HÉV carriages read as "2. kocsi" / "Carriage 2"; custom values as typed. */
+export function carriageLabel(stored: string): string {
+  return /^\d+$/.test(stored) ? i18n.t('carriageN', { n: stored }) : stored
 }
 
 export function useFormat() {

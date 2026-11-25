@@ -43,6 +43,8 @@ export interface TripDraft {
   line: string
   from: string
   to: string
+  carriage: string
+  seatColor: string
 }
 
 export function emptyDraft(mode: Mode): TripDraft {
@@ -70,6 +72,8 @@ export function emptyDraft(mode: Mode): TripDraft {
     line: '',
     from: '',
     to: '',
+    carriage: '',
+    seatColor: '',
   }
 }
 
@@ -119,7 +123,16 @@ export function tripToDraft(trip: Trip, ds: Pick<Dataset, 'vehicleTypes' | 'vehi
       company: trip.company,
     }
   }
-  return { ...common, transitType: trip.transitType, city: trip.city, line: trip.line, from: trip.from, to: trip.to }
+  return {
+    ...common,
+    transitType: trip.transitType,
+    city: trip.city,
+    line: trip.line,
+    from: trip.from,
+    to: trip.to,
+    carriage: trip.carriage ?? '',
+    seatColor: trip.seatColor ?? '',
+  }
 }
 
 async function resolvePerson(d: TripsDb, rawName: string, now: number): Promise<string | null> {
@@ -226,6 +239,8 @@ export async function saveTrip(draft: TripDraft, d: TripsDb = db): Promise<Trip>
             line: clean(draft.line),
             from: clean(draft.from),
             to: clean(draft.to),
+            carriage: draft.transitType === 'commuter' ? clean(draft.carriage) : '',
+            seatColor: draft.transitType === 'commuter' ? clean(draft.seatColor) : '',
           }
     await d.trips.put(t)
     return t

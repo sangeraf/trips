@@ -16,6 +16,8 @@ const en = {
   cityType: { metro: 'Metro', tram: 'Tram', trolleybus: 'Trolleybus', bus: 'Bus', commuter: 'Commuter' },
   cityTypeShort: { metro: 'Metro', tram: 'Tram', trolleybus: 'Trolley', bus: 'Bus', commuter: 'Commuter' },
   bodyType: { standard: 'Standard', articulated: 'Articulated' },
+  seatColor: { brown: 'Brown', red: 'Red', blue: 'Blue', mav: 'MÁV', new: 'New' },
+  carriageN: 'Carriage {{n}}',
   field: {
     date: 'Date',
     carType: 'Type',
@@ -39,6 +41,8 @@ const en = {
     reg: 'Reg. number',
     companions: 'Companions',
     notes: 'Notes',
+    carriage: 'Carriage',
+    seatColor: 'Seat colour',
   },
   form: {
     newTitle: 'New trip – {{mode}}',
@@ -66,6 +70,8 @@ const en = {
     topRoutes: 'Most frequent routes',
     topPlaces: 'Most used places',
     taxiCompanies: 'Taxi companies',
+    carriages: 'Commuter carriages',
+    seatColors: 'Commuter seat colours',
     perMonth: 'Trips per month',
     from: 'From',
     to: 'To',

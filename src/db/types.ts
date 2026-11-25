@@ -7,6 +7,8 @@ export const CAR_TYPES: CarType[] = ['taxi', 'personal']
 export type CityType = 'metro' | 'tram' | 'trolleybus' | 'bus' | 'commuter'
 export const CITY_TYPES: CityType[] = ['metro', 'tram', 'trolleybus', 'bus', 'commuter']
 
+export const HEV_CARRIAGES = ['1', '2', '3']
+export const SEAT_COLORS = ['brown', 'red', 'blue', 'mav', 'new']
 export const BUS_BODY_TYPES = ['standard', 'articulated']
 export const hasBodyType = (subtype: string | null | undefined) => subtype === 'bus' || subtype === 'trolleybus'
 
@@ -55,6 +57,10 @@ export interface CityTrip extends TripBase {
   line: string
   from: string
   to: string
+  /** HÉV only: carriage position (HEV_CARRIAGES) or ''. */
+  carriage?: string
+  /** HÉV only: a SEAT_COLORS key or ''. */
+  seatColor?: string
 }
 
 export type Trip = CarTrip | CityTrip

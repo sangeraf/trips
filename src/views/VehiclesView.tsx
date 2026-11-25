@@ -4,7 +4,7 @@ import { BarList, StatTiles } from '../components/BarList'
 import { btnCls, btnDangerCls, btnGhostCls, Card, Empty, Field, inputCls, Section, Segmented } from '../components/ui'
 import { deleteRecord, findTypeCollision, findUnitCollision, updateVehicleType, updateVehicleUnit } from '../db/repo'
 import { CITY_TYPES, hasBodyType, plateKind, type Dataset, type Mode } from '../db/types'
-import { bodyTypeFromText, bodyTypeLabel, useFormat } from '../i18n'
+import { bodyTypeFromText, bodyTypeLabel, carriageLabel, seatColorLabel, useFormat } from '../i18n'
 import { vehicleStats, type TypeStats, type UnitStats } from '../lib/stats'
 
 export function VehiclesView({ ds }: { ds: Dataset }) {
@@ -184,6 +184,17 @@ function UnitRow({ u, ds, siblings, kind }: { u: UnitStats; ds: Dataset; sibling
           {f.date(u.first)} – {f.date(u.last)}
         </div>
       )}
+      {[
+        { title: t('field.seatColor'), items: u.seatColors, label: seatColorLabel },
+        { title: t('field.carriage'), items: u.carriages, label: carriageLabel },
+      ]
+        .filter((g) => g.items.length > 0)
+        .map((g) => (
+          <div key={g.title} className="mt-1 text-sm">
+            <span className="text-slate-500">{g.title}: </span>
+            {g.items.map((a) => `${g.label(a.label)} ${a.count}×`).join(' · ')}
+          </div>
+        ))}
       {editing && (
         <div className="mt-3 space-y-2">
           <Field label={t(`field.${kind}`)}>
