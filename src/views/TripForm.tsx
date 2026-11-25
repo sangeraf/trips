@@ -170,7 +170,7 @@ export function TripForm({ initial, ds, onClose, onCopy }: Props) {
       </Field>
 
       {d.mode === 'car' ? (
-        <Field label={t('field.carType')}>
+        <Field label={t('field.carType')} group>
           <Segmented
             value={d.carType}
             options={CAR_TYPES.map((v) => ({ value: v, label: t(`carType.${v}`) }))}
@@ -178,7 +178,7 @@ export function TripForm({ initial, ds, onClose, onCopy }: Props) {
           />
         </Field>
       ) : (
-        <Field label={t('field.transitType')}>
+        <Field label={t('field.transitType')} group>
           <Segmented
             value={d.transitType}
             options={CITY_TYPES.map((v) => ({ value: v, label: t(`cityType.${v}`) }))}
@@ -330,7 +330,7 @@ export function TripForm({ initial, ds, onClose, onCopy }: Props) {
           </div>
       )}
 
-      <Field label={t('field.companions')}>
+      <Field label={t('field.companions')} group>
         <PeopleSelect
           value={d.companions}
           onChange={(v) => set('companions', v)}

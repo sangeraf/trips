@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import { useId, type ReactNode } from 'react'
 
 export const inputCls =
   'w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-base text-slate-900 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100'
@@ -9,10 +9,28 @@ export const btnGhostCls =
   'rounded-lg px-4 py-2 font-medium border border-slate-300 text-slate-700 active:bg-slate-100 dark:border-slate-600 dark:text-slate-200 dark:active:bg-slate-700'
 export const btnDangerCls = 'rounded-lg px-4 py-2 font-medium border border-red-300 text-red-700 active:bg-red-50'
 
-export function Field({ label, children, className = '' }: { label: string; children: ReactNode; className?: string }) {
-  return (
+/** `group`: for button groups, which a wrapping <label> would mislabel. */
+export function Field({
+  label,
+  children,
+  className = '',
+  group = false,
+}: {
+  label: string
+  children: ReactNode
+  className?: string
+  group?: boolean
+}) {
+  const id = useId()
+  const caption = <span id={id} className="mb-1 block text-sm font-medium text-slate-600 dark:text-slate-300">{label}</span>
+  return group ? (
+    <div role="group" aria-labelledby={id} className={`block ${className}`}>
+      {caption}
+      {children}
+    </div>
+  ) : (
     <label className={`block ${className}`}>
-      <span className="mb-1 block text-sm font-medium text-slate-600 dark:text-slate-300">{label}</span>
+      {caption}
       {children}
     </label>
   )
