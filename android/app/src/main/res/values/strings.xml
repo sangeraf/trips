@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Trips</string>
+    <string name="title_activity_main">Trips</string>
+    <string name="package_name">io.github.sangeraf.trips</string>
+    <string name="custom_url_scheme">io.github.sangeraf.trips</string>
+</resources>
