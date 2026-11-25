@@ -4,7 +4,7 @@ import { BarList, StatTiles } from '../components/BarList'
 import { btnCls, btnDangerCls, btnGhostCls, Card, Empty, Field, inputCls, Section, Segmented } from '../components/ui'
 import { deleteRecord, findTypeCollision, findUnitCollision, updateVehicleType, updateVehicleUnit } from '../db/repo'
 import { CITY_TYPES, hasBodyType, plateKind, type Dataset, type Mode } from '../db/types'
-import { bodyTypeFromText, bodyTypeLabel, carriageLabel, seatColorLabel, useFormat } from '../i18n'
+import i18n, { bodyTypeFromText, bodyTypeLabel, carriageLabel, seatColorLabel, useFormat } from '../i18n'
 import { vehicleStats, type Agg, type TypeStats, type UnitStats } from '../lib/stats'
 
 type SortBy = 'abc' | 'count' | 'time'
@@ -12,7 +12,7 @@ type SortBy = 'abc' | 'count' | 'time'
 /** A–Z ascending (unnamed last), or count / time descending. */
 function sortAgg<T extends Agg>(list: T[], by: SortBy): T[] {
   const cmp: Record<SortBy, (a: T, b: T) => number> = {
-    abc: (a, b) => (!a.label ? 1 : 0) - (!b.label ? 1 : 0) || a.label.localeCompare(b.label, undefined, { numeric: true }),
+    abc: (a, b) => (!a.label ? 1 : 0) - (!b.label ? 1 : 0) || a.label.localeCompare(b.label, i18n.language, { numeric: true }),
     count: (a, b) => b.count - a.count || b.minutes - a.minutes,
     time: (a, b) => b.minutes - a.minutes || b.count - a.count,
   }
