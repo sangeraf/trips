@@ -1,7 +1,7 @@
 import { Capacitor } from '@capacitor/core'
 import { Directory, Encoding, Filesystem } from '@capacitor/filesystem'
 import { Share } from '@capacitor/share'
-import type { Dataset } from '../db/types'
+import type { Dataset, Trip } from '../db/types'
 import { formatDuration } from './duration'
 
 export function exportJson(ds: Dataset): string {
@@ -11,11 +11,20 @@ export function exportJson(ds: Dataset): string {
 export function parseBackup(text: string): Dataset {
   const j = JSON.parse(text) as Partial<Dataset>
   if (!Array.isArray(j.trips)) throw new Error('Not a trips backup file')
-  return { trips: j.trips, vehicleTypes: j.vehicleTypes ?? [], vehicleUnits: j.vehicleUnits ?? [], people: j.people ?? [] }
+  const valid = (t: Partial<Trip>) =>
+    typeof t.id === 'string' &&
+    (t.mode === 'car' || t.mode === 'city') &&
+    typeof t.date === 'string' &&
+    /^\d{4}-\d{2}-\d{2}$/.test(t.date) &&
+    Array.isArray(t.companionIds) &&
+    typeof t.updatedAt === 'number'
+  return { trips: j.trips.filter(valid), vehicleTypes: j.vehicleTypes ?? [], vehicleUnits: j.vehicleUnits ?? [], people: j.people ?? [] }
 }
 
 const csvCell = (v: unknown) => {
-  const s = v === null || v === undefined ? '' : String(v)
+  let s = v === null || v === undefined ? '' : String(v)
+  // Keeps spreadsheet apps from evaluating text as a formula.
+  if (typeof v === 'string' && /^[=+\-@\t\r]/.test(s)) s = `'${s}`
   return /[",\n;]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s
 }
 
