@@ -51,12 +51,11 @@ function collapse<T extends SyncRecord>(
   }
   const remap = new Map<string, string>()
   for (const r of records) {
-    if (r.deleted) continue
-    const winner = keep.get(key(r))!
-    if (winner.id !== r.id) {
-      remap.set(r.id, winner.id)
-      changed.set(r.id, { ...r, deleted: true, updatedAt: now })
-    }
+    const winner = keep.get(key(r))
+    if (!winner || winner.id === r.id) continue
+    // Earlier merge losers stay mapped so trips synced later with their id are relinked too.
+    remap.set(r.id, winner.id)
+    if (!r.deleted) changed.set(r.id, { ...r, deleted: true, updatedAt: now })
   }
   return remap
 }
@@ -96,7 +95,8 @@ export function dedupe(ds: Dataset, now = Date.now()): DedupeResult {
     if (t.companionIds.some((id) => personMap.has(id))) {
       next = { ...next, companionIds: [...new Set(t.companionIds.map((id) => personMap.get(id) ?? id))] }
     }
-    if (next !== t) trips.set(t.id, { ...next, updatedAt: now })
+    // Relinking is deterministic on every device, so it keeps updatedAt and never beats a real edit.
+    if (next !== t) trips.set(t.id, next)
   }
 
   const apply = <T extends SyncRecord>(list: T[], ch: Map<string, T>) => list.map((r) => ch.get(r.id) ?? r)
