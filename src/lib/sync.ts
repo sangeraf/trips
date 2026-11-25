@@ -1,6 +1,6 @@
 import { mergeIntoLocal } from '../db/repo'
 import type { Dataset, SyncRecord, Trip } from '../db/types'
-import { ConflictError, getFile, listDir, putFile, type GhConfig } from './github'
+import { ConflictError, getFile, listDir, putFile, repoInfo, type GhConfig } from './github'
 
 const FORMAT = 1
 
@@ -54,6 +54,7 @@ export interface SyncResult {
 
 /** Pulls every file, merges into the local database and pushes the files whose content changed. */
 export async function syncWithGitHub(cfg: GhConfig, deviceName = 'device'): Promise<SyncResult> {
+  if (!(await repoInfo(cfg)).private) throw new Error(`${cfg.owner}/${cfg.repo} is public; trips are only synced to a private repository`)
   for (let attempt = 0; ; attempt++) {
     const paths = ['people.json', 'vehicles.json', ...(await listDir(cfg, 'trips')).map((n) => `trips/${n}`)]
     const remote = new Map<string, { sha: string; text: string }>()

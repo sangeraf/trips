@@ -8,8 +8,10 @@ import { syncWithGitHub } from './sync'
 function fakeGitHub() {
   const files = new Map<string, { sha: string; text: string }>()
   let n = 0
+  let isPrivate = true
   const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status })
   const fetchMock = vi.fn(async (url: string, init: RequestInit = {}) => {
+    if (new URL(url).pathname === '/repos/me/data') return json({ private: isPrivate, default_branch: 'main', permissions: { push: true } })
     const path = decodeURIComponent(new URL(url).pathname.replace(/^\/repos\/me\/data\/contents\//, ''))
     if (init.method === 'PUT') {
       const body = JSON.parse(init.body as string) as { content: string; sha?: string }
@@ -24,7 +26,7 @@ function fakeGitHub() {
     if (dir.length) return json(dir.map((k) => ({ name: k.slice(path.length + 1), type: 'file' })))
     return json({ message: 'Not Found' }, 404)
   })
-  return { files, fetchMock }
+  return { files, fetchMock, setPrivate: (v: boolean) => (isPrivate = v) }
 }
 
 const cfg = { owner: 'me', repo: 'data', branch: '', token: 't' }
@@ -67,5 +69,14 @@ describe('syncWithGitHub', () => {
     await saveTrip({ ...emptyDraft('city'), companions: ['Anna'] })
     await syncWithGitHub(cfg)
     expect(JSON.parse(gh.files.get('people.json')!.text).people).toHaveLength(1)
+  })
+
+  it('refuses to sync to a public repository', async () => {
+    const gh = fakeGitHub()
+    gh.setPrivate(false)
+    vi.stubGlobal('fetch', gh.fetchMock)
+    await saveTrip(emptyDraft('city'))
+    await expect(syncWithGitHub(cfg)).rejects.toThrow(/public/)
+    expect(gh.files.size).toBe(0)
   })
 })
