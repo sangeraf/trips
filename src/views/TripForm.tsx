@@ -303,7 +303,7 @@ export function TripForm({ initial, ds, onClose, onCopy }: Props) {
       </Field>
 
       <div className="fixed inset-x-0 bottom-0 z-30 border-t border-slate-200 bg-white/95 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur dark:border-slate-700 dark:bg-slate-900/95">
-        <div className="mx-auto flex max-w-2xl gap-2">
+        <div className="mx-auto flex max-w-2xl flex-wrap gap-2">
           <button type="button" className={btnGhostCls} onClick={onClose}>
             {t('common.cancel')}
           </button>
