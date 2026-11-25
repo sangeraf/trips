@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { carriageLabel, seatColorFromText, seatColorLabel } from '.'
+import { carriageFromText, carriageLabel, seatColorFromText, seatColorLabel } from '.'
 
 describe('HÉV labels', () => {
   it('maps preset seat colours to keys in either language and keeps custom text', () => {
@@ -12,5 +12,9 @@ describe('HÉV labels', () => {
   it('labels numeric carriages and keeps custom ones', () => {
     expect(carriageLabel('2')).not.toBe('2')
     expect(carriageLabel('vezérlő')).toBe('vezérlő')
+    expect(carriageFromText('Carriage 2')).toBe('2')
+    expect(carriageFromText('2. kocsi')).toBe('2')
+    expect(carriageFromText(' 02 ')).toBe('2')
+    expect(carriageFromText('vezérlő')).toBe('vezérlő')
   })
 })

@@ -6,7 +6,7 @@ import { TimeInput } from '../components/TimeInput'
 import { btnCls, btnDangerCls, btnGhostCls, Field, inputCls, Segmented } from '../components/ui'
 import { alive, deleteTrip, saveTrip, type TripDraft } from '../db/repo'
 import { BUS_BODY_TYPES, CAR_TYPES, HEV_CARRIAGES, SEAT_COLORS, hasBodyType, CITY_TYPES, plateKind, vehicleSubtype, type Dataset } from '../db/types'
-import { bodyTypeFromText, bodyTypeLabel, seatColorFromText, seatColorLabel } from '../i18n'
+import { bodyTypeFromText, bodyTypeLabel, carriageFromText, seatColorFromText, seatColorLabel } from '../i18n'
 import { calcDuration, formatDuration, parseDuration, parseTime } from '../lib/duration'
 import { peopleStats } from '../lib/stats'
 import { cityOptions, companyOptions, lineOptions, placeOptions, type Option } from '../lib/suggest'
@@ -39,6 +39,7 @@ export function TripForm({ initial, ds, onClose, onCopy }: Props) {
   const [durationText, setDurationText] = useState(initial.durationManual ? formatDuration(initial.durationMin) : '')
   const [bodyText, setBodyText] = useState(bodyTypeLabel(initial.bodyType))
   const [seatText, setSeatText] = useState(seatColorLabel(initial.seatColor))
+  const [carriageText, setCarriageText] = useState(initial.carriage)
   const [saving, setSaving] = useState(false)
   const set = <K extends keyof TripDraft>(k: K, v: TripDraft[K]) => setD((s) => ({ ...s, [k]: v }))
 
@@ -206,7 +207,14 @@ export function TripForm({ initial, ds, onClose, onCopy }: Props) {
       {d.mode === 'city' && d.transitType === 'commuter' && (
                   <div className="grid grid-cols-2 gap-3">
           <Field label={t('field.carriage')}>
-            <Autocomplete value={d.carriage} onChange={(v) => set('carriage', v)} options={hev.carriages} />
+            <Autocomplete
+              value={carriageText}
+              onChange={(v) => {
+                setCarriageText(v)
+                set('carriage', carriageFromText(v))
+              }}
+              options={hev.carriages}
+            />
           </Field>
           <Field label={t('field.seatColor')}>
             <Autocomplete

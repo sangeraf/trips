@@ -56,6 +56,12 @@ export function carriageLabel(stored: string): string {
   return /^\d+$/.test(stored) ? i18n.t('carriageN', { n: stored }) : stored
 }
 
+/** "2", "2. kocsi", "Carriage 2" → "2"; anything else is kept as typed. */
+export function carriageFromText(text: string): string {
+  const m = normalize(text).match(/^(?:carriage|kocsi)?\s*(\d+)\.?\s*(?:kocsi)?$/)
+  return m ? String(Number(m[1])) : clean(text)
+}
+
 export function useFormat() {
   const { t, i18n: inst } = useTranslation()
   const locale = inst.language === 'hu' ? 'hu-HU' : 'en-GB'
