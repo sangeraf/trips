@@ -1,7 +1,8 @@
+import { avgMin, type Agg } from '../lib/stats'
 import i18n from 'i18next'
 import { useMemo } from 'react'
 import { initReactI18next, useTranslation } from 'react-i18next'
-import { BUS_BODY_TYPES } from '../db/types'
+import { BUS_BODY_TYPES, SEAT_COLORS } from '../db/types'
 import { clean, normalize } from '../lib/text'
 import { useSettings } from '../store/settings'
 import en from './en'
@@ -38,6 +39,30 @@ export function bodyTypeFromText(text: string): string {
   return builtIn ?? clean(text)
 }
 
+/** HÉV seat colours: built-in keys show translated, custom values as typed. */
+export function seatColorLabel(stored: string): string {
+  return SEAT_COLORS.includes(stored) ? i18n.t(`seatColor.${stored}`) : stored
+}
+
+export function seatColorFromText(text: string): string {
+  const n = normalize(text)
+  const builtIn = SEAT_COLORS.find(
+    (k) => n === k || n === normalize(en.seatColor[k as keyof typeof en.seatColor]) || n === normalize(hu.seatColor[k as keyof typeof hu.seatColor]),
+  )
+  return builtIn ?? clean(text)
+}
+
+/** Numeric HÉV carriages read as "2. kocsi" / "Carriage 2"; custom values as typed. */
+export function carriageLabel(stored: string): string {
+  return /^\d+$/.test(stored) ? i18n.t('carriageN', { n: stored }) : stored
+}
+
+/** "2", "2. kocsi", "Carriage 2" → "2"; anything else is kept as typed. */
+export function carriageFromText(text: string): string {
+  const m = normalize(text).match(/^(?:carriage|kocsi)?\s*(\d+)\.?\s*(?:kocsi)?$/)
+  return m ? String(Number(m[1])) : clean(text)
+}
+
 export function useFormat() {
   const { t, i18n: inst } = useTranslation()
   const locale = inst.language === 'hu' ? 'hu-HU' : 'en-GB'
@@ -49,6 +74,17 @@ export function useFormat() {
         const hu = inst.language === 'hu'
         if (!h) return hu ? `${m} p` : `${m} min`
         return hu ? `${h} ó ${m} p` : `${h} h ${m} min`
+      },
+      avg: (min: number) => {
+        const n = min.toLocaleString(locale, { minimumFractionDigits: 1, maximumFractionDigits: 1 })
+        return inst.language === 'hu' ? `Ø ${n} p` : `Ø ${n} min`
+      },
+      /** "3× · 1 h 5 min · Ø 21.7 min", plus distance when asked and known. */
+      agg(a: Agg, withKm = false) {
+        const avg = avgMin(a)
+        return [`${a.count}×`, this.hours(a.minutes), avg == null ? '' : this.avg(avg), withKm && a.km > 0 ? this.km(a.km) : '']
+          .filter(Boolean)
+          .join(' · ')
       },
       km: (n: number) => `${n.toLocaleString(locale, { maximumFractionDigits: 1 })} km`,
       date: (iso: string) =>

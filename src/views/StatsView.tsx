@@ -1,10 +1,10 @@
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { BarList, StatTiles } from '../components/BarList'
+import { BarList, StatTiles, type RankBy } from '../components/BarList'
 import { Card, Field, inputCls, Section, Segmented } from '../components/ui'
 import { hasBodyType, type Dataset, type Mode } from '../db/types'
-import { bodyTypeLabel, useFormat } from '../i18n'
-import { byMonth, filterTrips, groupBy, lineKey, one, placeKeys, routeKey, subtypeOf, summarize } from '../lib/stats'
+import { bodyTypeLabel, carriageLabel, seatColorLabel, useFormat } from '../i18n'
+import { avgMin, byMonth, filterTrips, groupBy, lineKey, one, placeKeys, RANKS, routeKey, subtypeOf, summarize } from '../lib/stats'
 import { normalize, todayIso } from '../lib/text'
 
 type Preset = 'all' | 'year' | 'month' | 'd30' | 'custom'
@@ -24,6 +24,7 @@ export function StatsView({ ds }: { ds: Dataset }) {
   const [preset, setPreset] = useState<Preset>('all')
   const [custom, setCustom] = useState({ from: '', to: '' })
   const [mode, setMode] = useState<Mode | ''>('')
+  const [rank, setRank] = useState<RankBy>('count')
   const { from, to } = preset === 'custom' ? custom : presetRange(preset)
 
   const s = useMemo(() => {
@@ -40,6 +41,12 @@ export function StatsView({ ds }: { ds: Dataset }) {
           ? one(`${x.transitType}|${normalize(vt.bodyType)}`, `${t(`cityTypeShort.${x.transitType}`)} · ${bodyTypeLabel(vt.bodyType)}`)
           : null
       }),
+      carriages: groupBy(city, (x) =>
+        x.mode === 'city' && x.transitType === 'commuter' && x.carriage ? one(normalize(x.carriage), carriageLabel(x.carriage)) : null,
+      ),
+      seatColors: groupBy(city, (x) =>
+        x.mode === 'city' && x.transitType === 'commuter' && x.seatColor ? one(normalize(x.seatColor), seatColorLabel(x.seatColor)) : null,
+      ),
       total: summarize(trips),
       modes: groupBy(trips, (x) => one(x.mode, t(`mode.${x.mode}`))),
       subtypes: groupBy(trips, (x) =>
@@ -87,48 +94,64 @@ export function StatsView({ ds }: { ds: Dataset }) {
             { value: 'car' as const, label: t('mode.car') },
           ]}
         />
+        <Segmented
+          value={rank}
+          onChange={setRank}
+          options={RANKS.map((r) => ({ value: r, label: t(`stats.rankBy.${r}`) }))}
+        />
       </div>
 
       <StatTiles
         tiles={[
           { label: t('stats.trips'), value: String(s.total.count) },
           { label: t('stats.time'), value: f.hours(s.total.minutes) },
+          { label: t('stats.avg'), value: avgMin(s.total) == null ? '—' : f.avg(avgMin(s.total)!) },
           { label: t('stats.distance'), value: f.km(s.total.km) },
         ]}
       />
 
       {!mode && (
         <Section title={t('stats.byMode')}>
-          <BarList items={s.modes} showKm />
+          <BarList by={rank} items={s.modes} showKm />
         </Section>
       )}
       <Section title={t('stats.bySubtype')}>
-        <BarList items={s.subtypes} showKm />
+        <BarList by={rank} items={s.subtypes} showKm />
       </Section>
       {mode !== 'car' && (
         <>
           <Section title={t('stats.topLines')}>
-            <BarList items={s.lines} />
+            <BarList by={rank} items={s.lines} />
           </Section>
           <Section title={t('stats.topCities')}>
-            <BarList items={s.cities} limit={5} />
+            <BarList by={rank} items={s.cities} limit={5} />
           </Section>
           {s.bodyTypes.length > 0 && (
             <Section title={t('stats.bodyTypes')}>
-              <BarList items={s.bodyTypes} />
+              <BarList by={rank} items={s.bodyTypes} />
+            </Section>
+          )}
+          {s.carriages.length > 0 && (
+            <Section title={t('stats.carriages')}>
+              <BarList by={rank} items={s.carriages} />
+            </Section>
+          )}
+          {s.seatColors.length > 0 && (
+            <Section title={t('stats.seatColors')}>
+              <BarList by={rank} items={s.seatColors} />
             </Section>
           )}
         </>
       )}
       <Section title={t('stats.topRoutes')}>
-        <BarList items={s.routes} showKm />
+        <BarList by={rank} items={s.routes} showKm />
       </Section>
       <Section title={t('stats.topPlaces')}>
-        <BarList items={s.places} />
+        <BarList items={s.places} countOnly />
       </Section>
       {mode !== 'city' && s.companies.length > 0 && (
         <Section title={t('stats.taxiCompanies')}>
-          <BarList items={s.companies} showKm />
+          <BarList by={rank} items={s.companies} showKm />
         </Section>
       )}
       <Section title={t('stats.perMonth')}>
@@ -136,7 +159,7 @@ export function StatsView({ ds }: { ds: Dataset }) {
           <Card>
             <div className="flex h-40 items-end gap-1 overflow-x-auto">
               {s.months.map((m) => (
-                <div key={m.key} className="flex min-w-[2rem] flex-1 flex-col items-center justify-end gap-1" title={`${m.count}× · ${f.hours(m.minutes)}`}>
+                <div key={m.key} className="flex min-w-[2rem] flex-1 flex-col items-center justify-end gap-1" title={f.agg(m)}>
                   <span className="text-xs text-slate-500">{m.count}</span>
                   <div className="w-full rounded-t bg-teal-600" style={{ height: `${(m.count / maxMonth) * 100}px` }} />
                   <span className="text-[10px] text-slate-500">{f.month(m.key)}</span>

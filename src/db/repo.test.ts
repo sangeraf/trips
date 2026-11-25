@@ -1,3 +1,4 @@
+import { vehicleStats } from '../lib/stats'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { TripsDb } from './db'
 import { dedupe } from './merge'
@@ -64,6 +65,25 @@ describe('bus body types', () => {
     await saveTrip({ ...bus, transitType: 'trolleybus', bodyType: 'articulated' }, d)
     const types = (await loadAll(d)).vehicleTypes
     expect(types.map((t) => t.bodyType).sort()).toEqual(['', 'Double decker', 'articulated', 'articulated', 'standard'])
+  })
+})
+
+describe('HÉV details', () => {
+  it('keeps carriage and seat colour only for commuter trips', async () => {
+    const hev = { ...emptyDraft('city'), transitType: 'commuter' as const, carriage: '2', seatColor: 'mav' }
+    const a = await saveTrip(hev, d)
+    const b = await saveTrip({ ...hev, transitType: 'bus' }, d)
+    expect(a).toMatchObject({ carriage: '2', seatColor: 'mav' })
+    expect(b).toMatchObject({ carriage: '', seatColor: '' })
+  })
+  it('lists seat colours and carriages per reg. number', async () => {
+    const hev = { ...emptyDraft('city'), transitType: 'commuter' as const, manufacturer: 'MÁV', model: 'MIX', licence: '912' }
+    await saveTrip({ ...hev, seatColor: 'brown', carriage: '1' }, d)
+    await saveTrip({ ...hev, seatColor: 'brown', carriage: '2' }, d)
+    await saveTrip({ ...hev, seatColor: 'zöld' }, d)
+    const unit = vehicleStats(await loadAll(d))[0].units[0]
+    expect(unit.seatColors.map((a) => [a.label, a.count])).toEqual([['brown', 2], ['zöld', 1]])
+    expect(unit.carriages.map((a) => a.label).sort()).toEqual(['1', '2'])
   })
 })
 

@@ -5,8 +5,8 @@ import { PeopleSelect } from '../components/PeopleSelect'
 import { TimeInput } from '../components/TimeInput'
 import { btnCls, btnDangerCls, btnGhostCls, Field, inputCls, Segmented } from '../components/ui'
 import { alive, deleteTrip, saveTrip, type TripDraft } from '../db/repo'
-import { BUS_BODY_TYPES, CAR_TYPES, hasBodyType, CITY_TYPES, plateKind, vehicleSubtype, type Dataset } from '../db/types'
-import { bodyTypeFromText, bodyTypeLabel } from '../i18n'
+import { BUS_BODY_TYPES, CAR_TYPES, HEV_CARRIAGES, SEAT_COLORS, hasBodyType, CITY_TYPES, plateKind, vehicleSubtype, type Dataset } from '../db/types'
+import { bodyTypeFromText, bodyTypeLabel, carriageFromText, seatColorFromText, seatColorLabel } from '../i18n'
 import { calcDuration, formatDuration, parseDuration, parseTime } from '../lib/duration'
 import { peopleStats } from '../lib/stats'
 import { cityOptions, companyOptions, lineOptions, placeOptions, type Option } from '../lib/suggest'
@@ -38,6 +38,8 @@ export function TripForm({ initial, ds, onClose, onCopy }: Props) {
   const [d, setD] = useState<TripDraft>(initial)
   const [durationText, setDurationText] = useState(initial.durationManual ? formatDuration(initial.durationMin) : '')
   const [bodyText, setBodyText] = useState(bodyTypeLabel(initial.bodyType))
+  const [seatText, setSeatText] = useState(seatColorLabel(initial.seatColor))
+  const [carriageText, setCarriageText] = useState(initial.carriage)
   const [saving, setSaving] = useState(false)
   const set = <K extends keyof TripDraft>(k: K, v: TripDraft[K]) => setD((s) => ({ ...s, [k]: v }))
 
@@ -116,6 +118,20 @@ export function TripForm({ initial, ds, onClose, onCopy }: Props) {
 
   const durationInvalid = d.durationManual && d.durationMin === null
   const timeInvalid = [d.departureTime, d.arrivalTime].some((v) => v !== '' && parseTime(v) === null)
+  const hev = useMemo(() => {
+    const used = trips.filter((x) => alive(x) && x.mode === 'city' && x.transitType === 'commuter')
+    return {
+      carriages: mergeOptions([
+        ...HEV_CARRIAGES.map((v) => ({ value: v, count: 0 })),
+        ...used.map((x) => ({ value: (x.mode === 'city' && x.carriage) || '', count: 1 })),
+      ]),
+      seatColors: mergeOptions([
+        ...SEAT_COLORS.map((k) => ({ value: seatColorLabel(k), count: 0 })),
+        ...used.map((x) => ({ value: x.mode === 'city' && x.seatColor ? seatColorLabel(x.seatColor) : '', count: 1 })),
+      ]),
+    }
+  }, [trips])
+
   const submit = async () => {
     if (durationInvalid || timeInvalid) return
     setSaving(true)
@@ -154,7 +170,7 @@ export function TripForm({ initial, ds, onClose, onCopy }: Props) {
       </Field>
 
       {d.mode === 'car' ? (
-        <Field label={t('field.carType')}>
+        <Field label={t('field.carType')} group>
           <Segmented
             value={d.carType}
             options={CAR_TYPES.map((v) => ({ value: v, label: t(`carType.${v}`) }))}
@@ -162,7 +178,7 @@ export function TripForm({ initial, ds, onClose, onCopy }: Props) {
           />
         </Field>
       ) : (
-        <Field label={t('field.transitType')}>
+        <Field label={t('field.transitType')} group>
           <Segmented
             value={d.transitType}
             options={CITY_TYPES.map((v) => ({ value: v, label: t(`cityType.${v}`) }))}
@@ -289,7 +305,32 @@ export function TripForm({ initial, ds, onClose, onCopy }: Props) {
         </div>
       </fieldset>
 
-      <Field label={t('field.companions')}>
+      {d.mode === 'city' && d.transitType === 'commuter' && (
+        <div className="grid grid-cols-2 gap-3">
+          <Field label={t('field.carriage')}>
+            <Autocomplete
+              value={carriageText}
+              onChange={(v) => {
+                setCarriageText(v)
+                set('carriage', carriageFromText(v))
+              }}
+              options={hev.carriages}
+            />
+          </Field>
+          <Field label={t('field.seatColor')}>
+            <Autocomplete
+              value={seatText}
+              onChange={(v) => {
+                setSeatText(v)
+                set('seatColor', seatColorFromText(v))
+              }}
+              options={hev.seatColors}
+            />
+          </Field>
+          </div>
+      )}
+
+      <Field label={t('field.companions')} group>
         <PeopleSelect
           value={d.companions}
           onChange={(v) => set('companions', v)}

@@ -1,20 +1,23 @@
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { BarList, StatTiles } from '../components/BarList'
+import { SortToggle } from '../components/SortToggle'
 import { btnCls, btnDangerCls, btnGhostCls, Card, Empty, Field, inputCls, Section, Segmented } from '../components/ui'
 import { deleteRecord, findTypeCollision, findUnitCollision, updateVehicleType, updateVehicleUnit } from '../db/repo'
 import { CITY_TYPES, hasBodyType, plateKind, type Dataset, type Mode } from '../db/types'
-import { bodyTypeFromText, bodyTypeLabel, useFormat } from '../i18n'
-import { vehicleStats, type TypeStats, type UnitStats } from '../lib/stats'
+import { bodyTypeFromText, bodyTypeLabel, carriageLabel, seatColorLabel, useFormat } from '../i18n'
+import { avgMin, sortAgg, vehicleStats, type SortBy, type TypeStats, type UnitStats } from '../lib/stats'
 
 export function VehiclesView({ ds }: { ds: Dataset }) {
   const { t } = useTranslation()
   const f = useFormat()
   const [mode, setMode] = useState<Mode>('city')
   const [openId, setOpenId] = useState<string | null>(null)
+  const [typeSort, setTypeSort] = useState<SortBy>('count')
+  const [unitSort, setUnitSort] = useState<SortBy>('count')
   const stats = useMemo(() => vehicleStats(ds), [ds])
   const open = stats.find((s) => s.type.id === openId)
-  if (open) return <TypeDetail s={open} all={stats} ds={ds} onBack={() => setOpenId(null)} />
+  if (open) return <TypeDetail s={open} all={stats} ds={ds} sort={unitSort} onSort={setUnitSort} onBack={() => setOpenId(null)} />
 
   const subtypes = mode === 'city' ? CITY_TYPES : ['']
   const ofMode = stats.filter((s) => s.type.mode === mode)
@@ -28,9 +31,13 @@ export function VehiclesView({ ds }: { ds: Dataset }) {
           { value: 'car' as const, label: t('mode.car') },
         ]}
       />
+      {ofMode.length > 0 && <SortToggle value={typeSort} onChange={setTypeSort} />}
       {!ofMode.length && <Empty>{t('vehicles.empty')}</Empty>}
       {subtypes.map((sub) => {
-        const list = ofMode.filter((s) => s.type.subtype === sub)
+        const list = sortAgg(
+          ofMode.filter((s) => s.type.subtype === sub),
+          typeSort,
+        )
         if (!list.length) return null
         return (
           <Section key={sub} title={sub ? t(`cityType.${sub}`) : t('mode.car')}>
@@ -41,10 +48,7 @@ export function VehiclesView({ ds }: { ds: Dataset }) {
                     {s.label || t('vehicles.unknownType')}
                     {s.type.bodyType && <span className="ml-2 text-sm font-normal text-slate-500">{bodyTypeLabel(s.type.bodyType)}</span>}
                   </span>
-                  <span className="text-sm text-slate-500">
-                    {s.count}× · {f.hours(s.minutes)}
-                    {s.km > 0 && ` · ${f.km(s.km)}`}
-                  </span>
+                  <span className="text-sm text-slate-500">{f.agg(s, true)}</span>
                 </div>
                 <div className="mt-1 text-xs text-slate-500">{t(`vehicles.${plateKind(s.type.mode, s.type.subtype)}Count`, { count: s.units.filter((u) => u.unit.licence).length })}</div>
               </Card>
@@ -56,7 +60,21 @@ export function VehiclesView({ ds }: { ds: Dataset }) {
   )
 }
 
-function TypeDetail({ s, all, ds, onBack }: { s: TypeStats; all: TypeStats[]; ds: Dataset; onBack: () => void }) {
+function TypeDetail({
+  s,
+  all,
+  ds,
+  sort,
+  onSort,
+  onBack,
+}: {
+  s: TypeStats
+  all: TypeStats[]
+  ds: Dataset
+  sort: SortBy
+  onSort: (v: SortBy) => void
+  onBack: () => void
+}) {
   const { t } = useTranslation()
   const f = useFormat()
   const [manufacturer, setManufacturer] = useState(s.type.manufacturer)
@@ -92,6 +110,7 @@ function TypeDetail({ s, all, ds, onBack }: { s: TypeStats; all: TypeStats[]; ds
         tiles={[
           { label: t('stats.trips'), value: String(s.count) },
           { label: t('stats.time'), value: f.hours(s.minutes) },
+          { label: t('stats.avg'), value: avgMin(s) == null ? '—' : f.avg(avgMin(s)!) },
           s.type.mode === 'car'
             ? { label: t('stats.distance'), value: f.km(s.km) }
             : { label: t('vehicles.lines'), value: String(s.lines.length) },
@@ -142,7 +161,8 @@ function TypeDetail({ s, all, ds, onBack }: { s: TypeStats; all: TypeStats[]; ds
       </Section>
 
       <Section title={t(`vehicles.${kind}s`)}>
-        {s.units.map((u) => (
+        {s.units.length > 0 && <SortToggle value={sort} onChange={onSort} />}
+        {sortAgg(s.units, sort).map((u) => (
           <UnitRow key={u.key} u={u} ds={ds} siblings={siblings} kind={kind} />
         ))}
       </Section>
@@ -174,16 +194,24 @@ function UnitRow({ u, ds, siblings, kind }: { u: UnitStats; ds: Dataset; sibling
     <Card>
       <div className="flex items-baseline justify-between gap-2" onClick={() => setEditing(!editing)}>
         <span className="font-mono font-medium">{u.unit.licence || t(`vehicles.no${kind === 'reg' ? 'Reg' : 'Licence'}`)}</span>
-        <span className="text-sm text-slate-500">
-          {u.count}× · {f.hours(u.minutes)}
-          {u.km > 0 && ` · ${f.km(u.km)}`}
-        </span>
+        <span className="text-sm text-slate-500">{f.agg(u, true)}</span>
       </div>
       {u.first && (
         <div className="text-xs text-slate-500">
           {f.date(u.first)} – {f.date(u.last)}
         </div>
       )}
+      {[
+        { title: t('field.seatColor'), items: u.seatColors, label: seatColorLabel },
+        { title: t('field.carriage'), items: u.carriages, label: carriageLabel },
+      ]
+        .filter((g) => g.items.length > 0)
+        .map((g) => (
+          <div key={g.title} className="mt-1 text-sm">
+            <span className="text-slate-500">{g.title}: </span>
+            {g.items.map((a) => `${g.label(a.label)} ${f.agg(a)}`).join(' / ')}
+          </div>
+        ))}
       {editing && (
         <div className="mt-3 space-y-2">
           <Field label={t(`field.${kind}`)}>

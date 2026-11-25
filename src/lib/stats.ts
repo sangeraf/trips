@@ -1,4 +1,6 @@
 import type { Dataset, Mode, Person, Trip, VehicleType, VehicleUnit } from '../db/types'
+import i18n from 'i18next'
+import { normalize } from './text'
 
 export interface Filter {
   from: string
@@ -17,16 +19,19 @@ export interface Agg {
   label: string
   count: number
   minutes: number
+  /** Trips with a known duration: the base of the average. */
+  timed: number
   km: number
   first: string
   last: string
 }
 
-const emptyAgg = (key: string, label: string): Agg => ({ key, label, count: 0, minutes: 0, km: 0, first: '', last: '' })
+const emptyAgg = (key: string, label: string): Agg => ({ key, label, count: 0, minutes: 0, timed: 0, km: 0, first: '', last: '' })
 
 function add(a: Agg, t: Trip) {
   a.count++
   a.minutes += t.durationMin ?? 0
+  if (t.durationMin != null) a.timed++
   a.km += t.mode === 'car' ? (t.distanceKm ?? 0) : 0
   if (!a.first || t.date < a.first) a.first = t.date
   if (!a.last || t.date > a.last) a.last = t.date
@@ -106,6 +111,9 @@ export function peopleStats(trips: Trip[], people: Person[]): PersonStats[] {
 
 export interface UnitStats extends Agg {
   unit: VehicleUnit
+  /** HÉV only, labels are the stored values. */
+  carriages: Agg[]
+  seatColors: Agg[]
 }
 
 export interface TypeStats extends Agg {
@@ -128,7 +136,17 @@ export function vehicleStats(ds: Pick<Dataset, 'trips' | 'vehicleTypes' | 'vehic
     .map((type) => {
       const units = ds.vehicleUnits
         .filter((u) => !u.deleted && u.vehicleTypeId === type.id)
-        .map((unit) => ({ ...summarize(byUnit.get(unit.id) ?? []), key: unit.id, label: unit.licence, unit }))
+        .map((unit) => {
+          const list = byUnit.get(unit.id) ?? []
+          return {
+            ...summarize(list),
+            key: unit.id,
+            label: unit.licence,
+            unit,
+            carriages: groupBy(list, (t) => (t.mode === 'city' && t.carriage ? one(normalize(t.carriage), t.carriage) : null)),
+            seatColors: groupBy(list, (t) => (t.mode === 'city' && t.seatColor ? one(normalize(t.seatColor), t.seatColor) : null)),
+          }
+        })
         .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label))
       const typeTrips = units.flatMap((u) => byUnit.get(u.unit.id) ?? [])
       return {
@@ -141,4 +159,30 @@ export function vehicleStats(ds: Pick<Dataset, 'trips' | 'vehicleTypes' | 'vehic
       }
     })
     .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label))
+}
+
+/** Average minutes per timed trip, or null when no trip has a duration. */
+export const avgMin = (a: Agg) => (a.timed ? a.minutes / a.timed : null)
+
+export const RANKS = ['count', 'time', 'avgAsc', 'avgDesc'] as const
+export type RankBy = (typeof RANKS)[number]
+export const SORTS = ['abc', ...RANKS] as const
+export type SortBy = (typeof SORTS)[number]
+
+/** A–Z ascending (unnamed last), count / time descending, or average either way (no average last). */
+export function sortAgg<T extends Agg>(list: T[], by: SortBy): T[] {
+  const avg = (dir: number) => (a: T, b: T) => {
+    const x = avgMin(a)
+    const y = avgMin(b)
+    if (x == null || y == null) return (x == null ? 1 : 0) - (y == null ? 1 : 0) || b.count - a.count
+    return dir * (x - y) || b.count - a.count
+  }
+  const cmp: Record<SortBy, (a: T, b: T) => number> = {
+    abc: (a, b) => (!a.label ? 1 : 0) - (!b.label ? 1 : 0) || a.label.localeCompare(b.label, i18n.language, { numeric: true }),
+    count: (a, b) => b.count - a.count || b.minutes - a.minutes,
+    time: (a, b) => b.minutes - a.minutes || b.count - a.count,
+    avgAsc: avg(1),
+    avgDesc: avg(-1),
+  }
+  return [...list].sort(cmp[by])
 }

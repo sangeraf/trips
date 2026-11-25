@@ -35,7 +35,7 @@ export function exportCsv(ds: Dataset): string {
   const types = new Map(ds.vehicleTypes.map((t) => [t.id, t]))
   const header = [
     'date', 'mode', 'subtype', 'city', 'line', 'company', 'driver', 'from', 'to', 'departure', 'arrival',
-    'duration', 'distance_km', 'manufacturer', 'model', 'body_type', 'licence', 'companions', 'notes',
+    'duration', 'distance_km', 'manufacturer', 'model', 'body_type', 'licence', 'carriage', 'seat_color', 'companions', 'notes',
   ]
   const rows = ds.trips
     .filter((t) => !t.deleted)
@@ -62,6 +62,8 @@ export function exportCsv(ds: Dataset): string {
         type?.model,
         type?.bodyType,
         unit?.licence,
+        car ? '' : t.carriage,
+        car ? '' : t.seatColor,
         t.companionIds.map((id) => people.get(id)).join(', '),
         t.notes,
       ].map(csvCell).join(',')
