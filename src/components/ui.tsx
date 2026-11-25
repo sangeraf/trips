@@ -22,15 +22,17 @@ export function Field({
   group?: boolean
 }) {
   const id = useId()
-  const caption = <span id={id} className="mb-1 block text-sm font-medium text-slate-600 dark:text-slate-300">{label}</span>
+  const cls = 'mb-1 block text-sm font-medium text-slate-600 dark:text-slate-300'
   return group ? (
     <div role="group" aria-labelledby={id} className={`block ${className}`}>
-      {caption}
+      <span id={id} className={cls} onClick={(e) => e.currentTarget.parentElement?.querySelector('input')?.focus()}>
+        {label}
+      </span>
       {children}
     </div>
   ) : (
     <label className={`block ${className}`}>
-      {caption}
+      <span className={cls}>{label}</span>
       {children}
     </label>
   )
