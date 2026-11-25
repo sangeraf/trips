@@ -4,8 +4,8 @@ export const MODES: Mode[] = ['car', 'city']
 export type CarType = 'taxi' | 'personal'
 export const CAR_TYPES: CarType[] = ['taxi', 'personal']
 
-export type CityType = 'metro' | 'tram' | 'trolleybus' | 'bus' | 'hev'
-export const CITY_TYPES: CityType[] = ['metro', 'tram', 'trolleybus', 'bus', 'hev']
+export type CityType = 'metro' | 'tram' | 'trolleybus' | 'bus' | 'commuter'
+export const CITY_TYPES: CityType[] = ['metro', 'tram', 'trolleybus', 'bus', 'commuter']
 
 export const BUS_BODY_TYPES = ['standard', 'articulated']
 

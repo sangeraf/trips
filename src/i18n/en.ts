@@ -13,8 +13,8 @@ const en = {
   },
   mode: { car: 'Car', city: 'City transport' },
   carType: { taxi: 'Taxi', personal: 'Personal' },
-  cityType: { metro: 'Metro', tram: 'Tram', trolleybus: 'Trolleybus', bus: 'Bus', hev: 'HÉV' },
-  cityTypeShort: { metro: 'M', tram: 'Tram', trolleybus: 'Trolley', bus: 'Bus', hev: 'HÉV' },
+  cityType: { metro: 'Metro', tram: 'Tram', trolleybus: 'Trolleybus', bus: 'Bus', commuter: 'Commuter' },
+  cityTypeShort: { metro: 'M', tram: 'Tram', trolleybus: 'Trolley', bus: 'Bus', commuter: 'Commuter' },
   bodyType: { standard: 'Standard', articulated: 'Articulated' },
   field: {
     date: 'Date',

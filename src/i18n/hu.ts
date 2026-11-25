@@ -15,8 +15,8 @@ const hu: Messages = {
   },
   mode: { car: 'Autó', city: 'Városi közlekedés' },
   carType: { taxi: 'Taxi', personal: 'Saját' },
-  cityType: { metro: 'Metró', tram: 'Villamos', trolleybus: 'Trolibusz', bus: 'Busz', hev: 'HÉV' },
-  cityTypeShort: { metro: 'M', tram: 'Villamos', trolleybus: 'Troli', bus: 'Busz', hev: 'HÉV' },
+  cityType: { metro: 'Metró', tram: 'Villamos', trolleybus: 'Trolibusz', bus: 'Busz', commuter: 'HÉV' },
+  cityTypeShort: { metro: 'M', tram: 'Villamos', trolleybus: 'Troli', bus: 'Busz', commuter: 'HÉV' },
   bodyType: { standard: 'Szóló', articulated: 'Csuklós' },
   field: {
     date: 'Dátum',

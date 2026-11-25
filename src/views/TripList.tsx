@@ -12,7 +12,7 @@ const badgeColor: Record<string, string> = {
   tram: 'bg-yellow-500',
   trolleybus: 'bg-red-600',
   bus: 'bg-sky-600',
-  hev: 'bg-green-700',
+  commuter: 'bg-green-700',
   taxi: 'bg-amber-500',
   personal: 'bg-slate-600',
 }
