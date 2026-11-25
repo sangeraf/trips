@@ -60,9 +60,22 @@ jobs:
           java-version: 21
       - run: npm ci
       - run: npm run android:sync
-      - run: ./gradlew assembleDebug
+      - name: Build signed APK
         working-directory: android
-      - run: cp android/app/build/outputs/apk/debug/app-debug.apk trips.apk
+        env:
+          # Only builds of main get the release key; PR builds use the debug key.
+          KEYSTORE_BASE64: ${{ github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && secrets.ANDROID_KEYSTORE_BASE64 || '' }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && secrets.ANDROID_KEYSTORE_PASSWORD || '' }}
+          VERSION_CODE: ${{ github.run_number }}
+        run: |
+          if [ -n "$KEYSTORE_BASE64" ]; then
+            echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/release.jks"
+            export ANDROID_KEYSTORE_FILE="$RUNNER_TEMP/release.jks"
+          else
+            echo "::warning::No release key for this build; the APK is signed with a throwaway debug key and can't update an installed app."
+          fi
+          ./gradlew assembleRelease
+          cp app/build/outputs/apk/release/app-release.apk ../trips.apk
       - uses: actions/upload-artifact@v4
         with:
           name: trips-apk
