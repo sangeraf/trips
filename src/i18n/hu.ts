@@ -61,7 +61,8 @@ const hu: Messages = {
   list: { empty: 'Még nincs utazás. Koppints a + gombra.', noMatch: 'Nincs a szűrésnek megfelelő utazás.' },
   stats: {
     none: 'Nincs adat',
-    rankBy: { count: 'Darabszám szerint', time: 'Idő szerint' },
+    rankBy: { count: 'Darabszám', time: 'Idő', avgAsc: 'Átlag ↑', avgDesc: 'Átlag ↓' },
+    avg: 'Átlag',
     trips: 'Utazás',
     time: 'Idő',
     distance: 'Autós táv',
@@ -91,7 +92,7 @@ const hu: Messages = {
   vehicles: {
     empty: 'Még nincs jármű. Itt jelennek meg, amint megadsz egyet egy utazásnál.',
     unknownType: 'Ismeretlen típus',
-    sort: { abc: 'ABC', count: 'Darabszám', time: 'Idő' },
+    sort: { abc: 'ABC', count: 'Darabszám', time: 'Idő', avgAsc: 'Átlag ↑', avgDesc: 'Átlag ↓' },
     licenceCount_one: '{{count}} rendszám',
     licenceCount_other: '{{count}} rendszám',
     regCount_one: '{{count}} pályaszám',

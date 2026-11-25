@@ -4,7 +4,7 @@ import { BarList, StatTiles, type RankBy } from '../components/BarList'
 import { Card, Field, inputCls, Section, Segmented } from '../components/ui'
 import { hasBodyType, type Dataset, type Mode } from '../db/types'
 import { bodyTypeLabel, carriageLabel, seatColorLabel, useFormat } from '../i18n'
-import { byMonth, filterTrips, groupBy, lineKey, one, placeKeys, routeKey, subtypeOf, summarize } from '../lib/stats'
+import { avgMin, byMonth, filterTrips, groupBy, lineKey, one, placeKeys, RANKS, routeKey, subtypeOf, summarize } from '../lib/stats'
 import { normalize, todayIso } from '../lib/text'
 
 type Preset = 'all' | 'year' | 'month' | 'd30' | 'custom'
@@ -97,7 +97,7 @@ export function StatsView({ ds }: { ds: Dataset }) {
         <Segmented
           value={rank}
           onChange={setRank}
-          options={(['count', 'time'] as RankBy[]).map((r) => ({ value: r, label: t(`stats.rankBy.${r}`) }))}
+          options={RANKS.map((r) => ({ value: r, label: t(`stats.rankBy.${r}`) }))}
         />
       </div>
 
@@ -105,6 +105,7 @@ export function StatsView({ ds }: { ds: Dataset }) {
         tiles={[
           { label: t('stats.trips'), value: String(s.total.count) },
           { label: t('stats.time'), value: f.hours(s.total.minutes) },
+          { label: t('stats.avg'), value: avgMin(s.total) == null ? '—' : f.avg(avgMin(s.total)!) },
           { label: t('stats.distance'), value: f.km(s.total.km) },
         ]}
       />
@@ -158,7 +159,7 @@ export function StatsView({ ds }: { ds: Dataset }) {
           <Card>
             <div className="flex h-40 items-end gap-1 overflow-x-auto">
               {s.months.map((m) => (
-                <div key={m.key} className="flex min-w-[2rem] flex-1 flex-col items-center justify-end gap-1" title={`${m.count}× · ${f.hours(m.minutes)}`}>
+                <div key={m.key} className="flex min-w-[2rem] flex-1 flex-col items-center justify-end gap-1" title={f.agg(m)}>
                   <span className="text-xs text-slate-500">{m.count}</span>
                   <div className="w-full rounded-t bg-teal-600" style={{ height: `${(m.count / maxMonth) * 100}px` }} />
                   <span className="text-[10px] text-slate-500">{f.month(m.key)}</span>

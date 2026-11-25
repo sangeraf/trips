@@ -6,7 +6,7 @@ import { btnCls, btnDangerCls, btnGhostCls, Card, Empty, Field, inputCls, Sectio
 import { deleteRecord, findTypeCollision, findUnitCollision, updateVehicleType, updateVehicleUnit } from '../db/repo'
 import { CITY_TYPES, hasBodyType, plateKind, type Dataset, type Mode } from '../db/types'
 import { bodyTypeFromText, bodyTypeLabel, carriageLabel, seatColorLabel, useFormat } from '../i18n'
-import { sortAgg, vehicleStats, type SortBy, type TypeStats, type UnitStats } from '../lib/stats'
+import { avgMin, sortAgg, vehicleStats, type SortBy, type TypeStats, type UnitStats } from '../lib/stats'
 
 export function VehiclesView({ ds }: { ds: Dataset }) {
   const { t } = useTranslation()
@@ -48,10 +48,7 @@ export function VehiclesView({ ds }: { ds: Dataset }) {
                     {s.label || t('vehicles.unknownType')}
                     {s.type.bodyType && <span className="ml-2 text-sm font-normal text-slate-500">{bodyTypeLabel(s.type.bodyType)}</span>}
                   </span>
-                  <span className="text-sm text-slate-500">
-                    {s.count}× · {f.hours(s.minutes)}
-                    {s.km > 0 && ` · ${f.km(s.km)}`}
-                  </span>
+                  <span className="text-sm text-slate-500">{f.agg(s, true)}</span>
                 </div>
                 <div className="mt-1 text-xs text-slate-500">{t(`vehicles.${plateKind(s.type.mode, s.type.subtype)}Count`, { count: s.units.filter((u) => u.unit.licence).length })}</div>
               </Card>
@@ -113,6 +110,7 @@ function TypeDetail({
         tiles={[
           { label: t('stats.trips'), value: String(s.count) },
           { label: t('stats.time'), value: f.hours(s.minutes) },
+          { label: t('stats.avg'), value: avgMin(s) == null ? '—' : f.avg(avgMin(s)!) },
           s.type.mode === 'car'
             ? { label: t('stats.distance'), value: f.km(s.km) }
             : { label: t('vehicles.lines'), value: String(s.lines.length) },
@@ -196,10 +194,7 @@ function UnitRow({ u, ds, siblings, kind }: { u: UnitStats; ds: Dataset; sibling
     <Card>
       <div className="flex items-baseline justify-between gap-2" onClick={() => setEditing(!editing)}>
         <span className="font-mono font-medium">{u.unit.licence || t(`vehicles.no${kind === 'reg' ? 'Reg' : 'Licence'}`)}</span>
-        <span className="text-sm text-slate-500">
-          {u.count}× · {f.hours(u.minutes)}
-          {u.km > 0 && ` · ${f.km(u.km)}`}
-        </span>
+        <span className="text-sm text-slate-500">{f.agg(u, true)}</span>
       </div>
       {u.first && (
         <div className="text-xs text-slate-500">
@@ -214,7 +209,7 @@ function UnitRow({ u, ds, siblings, kind }: { u: UnitStats; ds: Dataset; sibling
         .map((g) => (
           <div key={g.title} className="mt-1 text-sm">
             <span className="text-slate-500">{g.title}: </span>
-            {g.items.map((a) => `${g.label(a.label)} ${a.count}×`).join(' · ')}
+            {g.items.map((a) => `${g.label(a.label)} ${f.agg(a)}`).join(' / ')}
           </div>
         ))}
       {editing && (

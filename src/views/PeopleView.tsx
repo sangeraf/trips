@@ -6,7 +6,7 @@ import { btnCls, btnDangerCls, btnGhostCls, Card, Empty, Field, inputCls, Sectio
 import { deleteRecord, findPersonCollision, renamePerson } from '../db/repo'
 import type { Dataset } from '../db/types'
 import { useFormat } from '../i18n'
-import { groupBy, lineKey, one, peopleStats, routeKey, sortAgg, type PersonStats, type SortBy } from '../lib/stats'
+import { avgMin, groupBy, lineKey, one, peopleStats, RANKS, routeKey, sortAgg, type PersonStats, type SortBy } from '../lib/stats'
 
 export function PeopleView({ ds }: { ds: Dataset }) {
   const { t } = useTranslation()
@@ -25,9 +25,7 @@ export function PeopleView({ ds }: { ds: Dataset }) {
         <Card key={s.key} onClick={() => setOpenId(s.person.id)}>
           <div className="flex items-baseline justify-between gap-2">
             <span className="font-medium">{s.person.name}</span>
-            <span className="text-sm text-slate-500">
-              {s.count}× · {f.hours(s.minutes)}
-            </span>
+            <span className="text-sm text-slate-500">{f.agg(s)}</span>
           </div>
           <div className="mt-1 flex gap-3 text-xs text-slate-500">
             <span>
@@ -75,6 +73,7 @@ function PersonDetail({ s, ds, onBack }: { s: PersonStats; ds: Dataset; onBack: 
         tiles={[
           { label: t('stats.trips'), value: String(s.count) },
           { label: t('stats.time'), value: f.hours(s.minutes) },
+          { label: t('stats.avg'), value: avgMin(s) == null ? '—' : f.avg(avgMin(s)!) },
           { label: t('people.driven'), value: String(s.driven) },
         ]}
       />
@@ -88,7 +87,7 @@ function PersonDetail({ s, ds, onBack }: { s: PersonStats; ds: Dataset; onBack: 
         <Segmented
           value={rank}
           onChange={setRank}
-          options={(['count', 'time'] as RankBy[]).map((r) => ({ value: r, label: t(`stats.rankBy.${r}`) }))}
+          options={RANKS.map((r) => ({ value: r, label: t(`stats.rankBy.${r}`) }))}
         />
       )}
       {top.lines.length > 0 && (

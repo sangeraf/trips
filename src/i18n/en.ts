@@ -59,7 +59,8 @@ const en = {
   list: { empty: 'No trips yet. Tap + to add one.', noMatch: 'No trips match the filter.' },
   stats: {
     none: 'No data',
-    rankBy: { count: 'By count', time: 'By time' },
+    rankBy: { count: 'Count', time: 'Time', avgAsc: 'Avg ↑', avgDesc: 'Avg ↓' },
+    avg: 'Average',
     trips: 'Trips',
     time: 'Time',
     distance: 'Car distance',
@@ -89,7 +90,7 @@ const en = {
   vehicles: {
     empty: 'No vehicles yet. They appear here once you enter one in a trip.',
     unknownType: 'Unknown type',
-    sort: { abc: 'A–Z', count: 'Count', time: 'Time' },
+    sort: { abc: 'A–Z', count: 'Count', time: 'Time', avgAsc: 'Avg ↑', avgDesc: 'Avg ↓' },
     licenceCount_one: '{{count}} licence plate',
     licenceCount_other: '{{count}} licence plates',
     regCount_one: '{{count}} reg. number',

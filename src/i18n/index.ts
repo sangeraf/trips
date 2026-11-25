@@ -1,3 +1,4 @@
+import { avgMin, type Agg } from '../lib/stats'
 import i18n from 'i18next'
 import { useMemo } from 'react'
 import { initReactI18next, useTranslation } from 'react-i18next'
@@ -73,6 +74,17 @@ export function useFormat() {
         const hu = inst.language === 'hu'
         if (!h) return hu ? `${m} p` : `${m} min`
         return hu ? `${h} ó ${m} p` : `${h} h ${m} min`
+      },
+      avg: (min: number) => {
+        const n = min.toLocaleString(locale, { minimumFractionDigits: 1, maximumFractionDigits: 1 })
+        return inst.language === 'hu' ? `Ø ${n} p` : `Ø ${n} min`
+      },
+      /** "3× · 1 h 5 min · Ø 21.7 min", plus distance when asked and known. */
+      agg(a: Agg, withKm = false) {
+        const avg = avgMin(a)
+        return [`${a.count}×`, this.hours(a.minutes), avg == null ? '' : this.avg(avg), withKm && a.km > 0 ? this.km(a.km) : '']
+          .filter(Boolean)
+          .join(' · ')
       },
       km: (n: number) => `${n.toLocaleString(locale, { maximumFractionDigits: 1 })} km`,
       date: (iso: string) =>
