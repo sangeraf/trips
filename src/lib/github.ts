@@ -36,6 +36,7 @@ async function gh(cfg: GhConfig, path: string, init: RequestInit = {}): Promise<
       Authorization: `Bearer ${cfg.token}`,
       'X-GitHub-Api-Version': '2022-11-28',
       ...(init.body ? { 'Content-Type': 'application/json' } : {}),
+      ...init.headers,
     },
   })
 }
@@ -72,7 +73,8 @@ export interface RemoteFile {
 
 /** Reads a file; files over 1 MB come back without content, so they are fetched as a blob. */
 export async function getFile(cfg: GhConfig, path: string): Promise<RemoteFile | null> {
-  const res = await gh(cfg, `/contents/${path}${refQuery(cfg)}`)
+  // The object media type also works for 1–100 MB files (with empty content); the default one fails.
+  const res = await gh(cfg, `/contents/${path}${refQuery(cfg)}`, { headers: { Accept: 'application/vnd.github.object+json' } })
   if (res.status === 404) return null
   if (!res.ok) await fail(res)
   const j = (await res.json()) as { sha: string; content?: string; encoding?: string; size: number }
