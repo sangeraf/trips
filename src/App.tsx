@@ -104,7 +104,7 @@ export default function App() {
       </main>
 
       {!draft && tab === 'trips' && (
-        <div className="fixed bottom-20 right-4 z-30 flex flex-col items-end gap-2 pb-[env(safe-area-inset-bottom)] sm:right-[calc(50%-20rem)]">
+        <div className="fixed bottom-20 right-4 z-30 flex flex-col items-end gap-2 pb-[env(safe-area-inset-bottom)] sm:right-[max(1rem,calc(50%-20rem))]">
           {chooser && (
             <>
               <button className="rounded-full bg-white px-4 py-2 font-medium text-teal-800 shadow-lg dark:bg-slate-700 dark:text-white" onClick={() => openNew('city')}>
