@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { BarList, StatTiles } from '../components/BarList'
 import { btnCls, btnDangerCls, btnGhostCls, Card, Empty, Field, inputCls, Section, Segmented } from '../components/ui'
 import { deleteRecord, findTypeCollision, findUnitCollision, updateVehicleType, updateVehicleUnit } from '../db/repo'
-import { CITY_TYPES, plateKind, type Dataset, type Mode } from '../db/types'
+import { CITY_TYPES, hasBodyType, plateKind, type Dataset, type Mode } from '../db/types'
 import { bodyTypeFromText, bodyTypeLabel, useFormat } from '../i18n'
 import { vehicleStats, type TypeStats, type UnitStats } from '../lib/stats'
 
@@ -62,7 +62,7 @@ function TypeDetail({ s, all, ds, onBack }: { s: TypeStats; all: TypeStats[]; ds
   const [manufacturer, setManufacturer] = useState(s.type.manufacturer)
   const [model, setModel] = useState(s.type.model)
   const [bodyText, setBodyText] = useState(bodyTypeLabel(s.type.bodyType))
-  const isBus = s.type.subtype === 'bus'
+  const isBus = hasBodyType(s.type.subtype)
   const bodyType = isBus ? bodyTypeFromText(bodyText) : ''
   const dirty = manufacturer !== s.type.manufacturer || model !== s.type.model || bodyType !== s.type.bodyType
   const kind = plateKind(s.type.mode, s.type.subtype)

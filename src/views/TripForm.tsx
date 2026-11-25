@@ -5,7 +5,7 @@ import { PeopleSelect } from '../components/PeopleSelect'
 import { TimeInput } from '../components/TimeInput'
 import { btnCls, btnDangerCls, btnGhostCls, Field, inputCls, Segmented } from '../components/ui'
 import { alive, deleteTrip, saveTrip, type TripDraft } from '../db/repo'
-import { BUS_BODY_TYPES, CAR_TYPES, CITY_TYPES, plateKind, vehicleSubtype, type Dataset } from '../db/types'
+import { BUS_BODY_TYPES, CAR_TYPES, hasBodyType, CITY_TYPES, plateKind, vehicleSubtype, type Dataset } from '../db/types'
 import { bodyTypeFromText, bodyTypeLabel } from '../i18n'
 import { calcDuration, formatDuration, parseDuration, parseTime } from '../lib/duration'
 import { peopleStats } from '../lib/stats'
@@ -260,8 +260,8 @@ export function TripForm({ initial, ds, onClose, onCopy }: Props) {
             <Autocomplete value={d.model} onChange={(v) => set('model', v)} options={vehicle.models} />
           </Field>
         </div>
-        <div className={subtype === 'bus' ? 'grid grid-cols-2 gap-3' : ''}>
-          {subtype === 'bus' && (
+        <div className={hasBodyType(subtype) ? 'grid grid-cols-2 gap-3' : ''}>
+          {hasBodyType(subtype) && (
             <Field label={t('field.bodyType')}>
               <Autocomplete
                 value={bodyText}

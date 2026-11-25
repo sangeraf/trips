@@ -62,7 +62,7 @@ const hu: Messages = {
     distance: 'Autós táv',
     byMode: 'Módok szerint',
     bySubtype: 'Típusok szerint',
-    bodyTypes: 'Buszkivitelek',
+    bodyTypes: 'Kivitelek',
     topLines: 'Leggyakoribb viszonylatok',
     topCities: 'Városok',
     topRoutes: 'Leggyakoribb útvonalak',

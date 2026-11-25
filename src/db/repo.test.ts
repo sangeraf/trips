@@ -55,14 +55,15 @@ describe('saveTrip', () => {
 })
 
 describe('bus body types', () => {
-  it('treat standard and articulated versions as separate types, only for buses', async () => {
+  it('treat standard and articulated versions as separate types, only for buses and trolleybuses', async () => {
     const bus = { ...emptyDraft('city'), transitType: 'bus' as const, manufacturer: 'Mercedes', model: 'Citaro' }
     await saveTrip({ ...bus, bodyType: 'standard' }, d)
     await saveTrip({ ...bus, bodyType: 'articulated' }, d)
     await saveTrip({ ...bus, bodyType: 'Double decker' }, d)
     await saveTrip({ ...bus, transitType: 'tram', bodyType: 'articulated' }, d)
+    await saveTrip({ ...bus, transitType: 'trolleybus', bodyType: 'articulated' }, d)
     const types = (await loadAll(d)).vehicleTypes
-    expect(types.map((t) => t.bodyType).sort()).toEqual(['', 'Double decker', 'articulated', 'standard'])
+    expect(types.map((t) => t.bodyType).sort()).toEqual(['', 'Double decker', 'articulated', 'articulated', 'standard'])
   })
 })
 

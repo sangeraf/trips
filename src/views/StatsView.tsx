@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { BarList, StatTiles } from '../components/BarList'
 import { Card, Field, inputCls, Section, Segmented } from '../components/ui'
-import type { Dataset, Mode } from '../db/types'
+import { hasBodyType, type Dataset, type Mode } from '../db/types'
 import { bodyTypeLabel, useFormat } from '../i18n'
 import { byMonth, filterTrips, groupBy, lineKey, one, placeKeys, routeKey, subtypeOf, summarize } from '../lib/stats'
 import { todayIso } from '../lib/text'
@@ -34,8 +34,11 @@ export function StatsView({ ds }: { ds: Dataset }) {
     const types = new Map(ds.vehicleTypes.map((v) => [v.id, v]))
     return {
       bodyTypes: groupBy(city, (x) => {
-        const vt = x.mode === 'city' && x.transitType === 'bus' && x.vehicleUnitId ? types.get(unitType.get(x.vehicleUnitId) ?? '') : undefined
-        return vt?.bodyType ? one(vt.bodyType, bodyTypeLabel(vt.bodyType)) : null
+        if (x.mode !== 'city' || !hasBodyType(x.transitType) || !x.vehicleUnitId) return null
+        const vt = types.get(unitType.get(x.vehicleUnitId) ?? '')
+        return vt?.bodyType
+          ? one(`${x.transitType}|${vt.bodyType}`, `${t(`cityTypeShort.${x.transitType}`)} · ${bodyTypeLabel(vt.bodyType)}`)
+          : null
       }),
       total: summarize(trips),
       modes: groupBy(trips, (x) => one(x.mode, t(`mode.${x.mode}`))),

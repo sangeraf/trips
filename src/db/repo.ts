@@ -13,6 +13,7 @@ import {
   type Trip,
   type VehicleType,
   type VehicleUnit,
+  hasBodyType,
 } from './types'
 
 /** Editable form state; vehicles and people are entered as text and resolved to ids on save. */
@@ -147,7 +148,7 @@ async function resolveVehicle(
     subtype,
     manufacturer: clean(manufacturer),
     model: clean(model),
-    bodyType: subtype === 'bus' ? clean(bodyType) : '',
+    bodyType: hasBodyType(subtype) ? clean(bodyType) : '',
   }
   const lic = clean(licence).toUpperCase()
   if (!t.manufacturer && !t.model && !t.bodyType && !lic) return null

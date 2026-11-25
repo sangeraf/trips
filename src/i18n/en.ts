@@ -60,7 +60,7 @@ const en = {
     distance: 'Car distance',
     byMode: 'By mode',
     bySubtype: 'By type',
-    bodyTypes: 'Bus body types',
+    bodyTypes: 'Body types',
     topLines: 'Most used lines',
     topCities: 'Cities',
     topRoutes: 'Most frequent routes',

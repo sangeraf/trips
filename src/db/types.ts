@@ -8,6 +8,7 @@ export type CityType = 'metro' | 'tram' | 'trolleybus' | 'bus' | 'commuter'
 export const CITY_TYPES: CityType[] = ['metro', 'tram', 'trolleybus', 'bus', 'commuter']
 
 export const BUS_BODY_TYPES = ['standard', 'articulated']
+export const hasBodyType = (subtype: string | null | undefined) => subtype === 'bus' || subtype === 'trolleybus'
 
 /** Rail vehicles and trolleybuses carry a registration number ("pályaszám"), road vehicles a licence plate. */
 export function plateKind(mode: Mode, subtype: string): 'licence' | 'reg' {
@@ -64,7 +65,7 @@ export interface VehicleType extends SyncRecord {
   subtype: string
   manufacturer: string
   model: string
-  /** Buses only: a built-in key from BUS_BODY_TYPES or a custom name as typed. */
+  /** Buses and trolleybuses only: a built-in key from BUS_BODY_TYPES or a custom name as typed. */
   bodyType: string
 }
 
