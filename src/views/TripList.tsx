@@ -54,8 +54,8 @@ export function TripList({ ds, onOpen }: { ds: Dataset; onOpen: (t: Trip) => voi
           type?.manufacturer,
           type?.model,
           ...tr.companionIds.map((id) => people.get(id)),
-          tr.mode === 'city' && tr.carriage && carriageLabel(tr.carriage),
-          tr.mode === 'city' && tr.seatColor && seatColorLabel(tr.seatColor),
+          tr.mode === 'city' ? carriageLabel(tr.carriage ?? '') : '',
+          tr.mode === 'city' ? seatColorLabel(tr.seatColor ?? '') : '',
         ].join(' ')
         return normalize(hay).includes(nq)
       })
