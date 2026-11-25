@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { calcDuration, formatDuration, parseDuration } from './duration'
+import { calcDuration, formatDuration, normalizeTime, parseDuration } from './duration'
 
 describe('duration', () => {
   it('calculates across midnight', () => {
@@ -17,5 +17,15 @@ describe('duration', () => {
   it('formats', () => {
     expect(formatDuration(85)).toBe('1:25')
     expect(formatDuration(null)).toBe('')
+  })
+
+  it('normalizes typed 24-hour times', () => {
+    expect(normalizeTime('815')).toBe('08:15')
+    expect(normalizeTime('8.15')).toBe('08:15')
+    expect(normalizeTime('23:50')).toBe('23:50')
+    expect(normalizeTime('2350')).toBe('23:50')
+    expect(normalizeTime('7')).toBe('07:00')
+    expect(normalizeTime('24:00')).toBeNull()
+    expect(normalizeTime('8:7')).toBeNull()
   })
 })

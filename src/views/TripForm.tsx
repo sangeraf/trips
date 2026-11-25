@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Autocomplete } from '../components/Autocomplete'
 import { PeopleSelect } from '../components/PeopleSelect'
+import { TimeInput } from '../components/TimeInput'
 import { btnCls, btnDangerCls, btnGhostCls, Field, inputCls, Segmented } from '../components/ui'
 import { alive, deleteTrip, saveTrip, type TripDraft } from '../db/repo'
 import { BUS_BODY_TYPES, CAR_TYPES, CITY_TYPES, plateKind, vehicleSubtype, type Dataset } from '../db/types'
@@ -192,10 +193,10 @@ export function TripForm({ initial, ds, onClose, onCopy }: Props) {
 
       <div className="grid grid-cols-3 gap-3">
         <Field label={t('field.departure')}>
-          <input type="time" className={inputCls} value={d.departureTime} onChange={(e) => set('departureTime', e.target.value)} />
+          <TimeInput value={d.departureTime} onChange={(v) => set('departureTime', v)} />
         </Field>
         <Field label={t('field.arrival')}>
-          <input type="time" className={inputCls} value={d.arrivalTime} onChange={(e) => set('arrivalTime', e.target.value)} />
+          <TimeInput value={d.arrivalTime} onChange={(v) => set('arrivalTime', v)} />
         </Field>
         <Field label={t('field.duration')}>
           <input

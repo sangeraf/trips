@@ -34,3 +34,14 @@ export function formatDuration(min: number | null | undefined): string {
   const m = Math.round(min % 60)
   return `${h}:${String(m).padStart(2, '0')}`
 }
+
+/** Turns typed times like "815", "8.15" or "8:15" into "08:15"; null when not a valid 24-hour time. */
+export function normalizeTime(s: string): string | null {
+  const t = s.trim()
+  const m = /^(\d{1,2})[:.](\d{2})$/.exec(t) ?? /^(\d{1,2})(\d{2})$/.exec(t) ?? /^(\d{1,2})()$/.exec(t)
+  if (!m) return null
+  const h = Number(m[1])
+  const min = Number(m[2] || 0)
+  if (h > 23 || min > 59) return null
+  return `${String(h).padStart(2, '0')}:${String(min).padStart(2, '0')}`
+}
