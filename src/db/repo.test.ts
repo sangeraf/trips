@@ -1,0 +1,130 @@
+import { beforeEach, describe, expect, it } from 'vitest'
+import { TripsDb } from './db'
+import { dedupe } from './merge'
+import {
+  emptyDraft,
+  loadAll,
+  mergeIntoLocal,
+  renamePerson,
+  saveTrip,
+  tripToDraft,
+  updateVehicleType,
+  updateVehicleUnit,
+} from './repo'
+import type { CityTrip, Dataset } from './types'
+
+let d: TripsDb
+let n = 0
+beforeEach(async () => {
+  d = new TripsDb(`test-${n++}`)
+  await d.open()
+})
+
+const live = <T extends { deleted?: boolean }>(xs: T[]) => xs.filter((x) => !x.deleted)
+
+describe('saveTrip', () => {
+  it('reuses vehicles per mode and subtype and never mixes modes', async () => {
+    const city = { ...emptyDraft('city'), transitType: 'tram' as const, manufacturer: 'Ganz', model: 'CSMG', licence: '1301' }
+    const t1 = await saveTrip(city, d)
+    const t2 = await saveTrip({ ...city, licence: '1301 ' }, d)
+    await saveTrip({ ...city, transitType: 'bus' }, d)
+    await saveTrip({ ...emptyDraft('car'), manufacturer: 'ganz', model: 'csmg', licence: '1301' }, d)
+    const ds = await loadAll(d)
+    expect(ds.vehicleTypes.map((t) => `${t.mode}/${t.subtype}`).sort()).toEqual(['car/', 'city/bus', 'city/tram'])
+    expect(ds.vehicleUnits).toHaveLength(3)
+    expect(t1.vehicleUnitId).toBe(t2.vehicleUnitId)
+  })
+
+  it('adds the driver of a personal car to the companions', async () => {
+    const t = await saveTrip(
+      { ...emptyDraft('car'), carType: 'personal', driver: 'Anna', companions: ['Béla', 'anna '] },
+      d,
+    )
+    const ds = await loadAll(d)
+    expect(ds.people.map((p) => p.name).sort()).toEqual(['Anna', 'Béla'])
+    expect(t.mode === 'car' && t.driverId).toBe(t.companionIds[0])
+    expect(t.companionIds).toHaveLength(2)
+    expect(tripToDraft(t, ds).companions).toEqual(['Béla'])
+  })
+
+  it('calculates duration unless entered manually', async () => {
+    const base = { ...emptyDraft('city'), departureTime: '23:50', arrivalTime: '00:20' }
+    expect((await saveTrip(base, d)).durationMin).toBe(30)
+    expect((await saveTrip({ ...base, durationMin: 45, durationManual: true }, d)).durationMin).toBe(45)
+  })
+})
+
+describe('bus body types', () => {
+  it('treat standard and articulated versions as separate types, only for buses', async () => {
+    const bus = { ...emptyDraft('city'), transitType: 'bus' as const, manufacturer: 'Mercedes', model: 'Citaro' }
+    await saveTrip({ ...bus, bodyType: 'standard' }, d)
+    await saveTrip({ ...bus, bodyType: 'articulated' }, d)
+    await saveTrip({ ...bus, bodyType: 'Double decker' }, d)
+    await saveTrip({ ...bus, transitType: 'tram', bodyType: 'articulated' }, d)
+    const types = (await loadAll(d)).vehicleTypes
+    expect(types.map((t) => t.bodyType).sort()).toEqual(['', 'Double decker', 'articulated', 'standard'])
+  })
+})
+
+describe('renames merge duplicates', () => {
+  it('merges vehicle types and relinks trips', async () => {
+    const a = await saveTrip({ ...emptyDraft('city'), manufacturer: 'Ikarus', model: '280', licence: 'ABC-123' }, d)
+    const b = await saveTrip({ ...emptyDraft('city'), manufacturer: 'Ikarsu', model: '280', licence: 'ABC123' }, d)
+    const ds = await loadAll(d)
+    const typo = ds.vehicleTypes.find((t) => t.manufacturer === 'Ikarsu')!
+    await updateVehicleType(typo.id, 'Ikarus', '280', '', d)
+    const after = await loadAll(d)
+    expect(live(after.vehicleTypes)).toHaveLength(1)
+    expect(live(after.vehicleUnits)).toHaveLength(1)
+    const ids = after.trips.filter((t) => t.id === a.id || t.id === b.id).map((t) => t.vehicleUnitId)
+    expect(new Set(ids).size).toBe(1)
+  })
+
+  it('moves a licence to another type', async () => {
+    await saveTrip({ ...emptyDraft('city'), manufacturer: 'Solaris', model: 'Urbino', licence: 'X1' }, d)
+    await saveTrip({ ...emptyDraft('city'), manufacturer: 'Mercedes', model: 'Citaro', licence: 'Y1' }, d)
+    const ds = await loadAll(d)
+    const sol = ds.vehicleTypes.find((t) => t.manufacturer === 'Solaris')!
+    const y1 = ds.vehicleUnits.find((u) => u.licence === 'Y1')!
+    await updateVehicleUnit(y1.id, { vehicleTypeId: sol.id }, d)
+    const after = await loadAll(d)
+    expect(after.vehicleUnits.find((u) => u.id === y1.id)!.vehicleTypeId).toBe(sol.id)
+  })
+
+  it('merges people', async () => {
+    await saveTrip({ ...emptyDraft('city'), companions: ['Kati', 'Katalin'] }, d)
+    const ds = await loadAll(d)
+    await renamePerson(ds.people.find((p) => p.name === 'Katalin')!.id, 'kati', d)
+    const after = await loadAll(d)
+    expect(live(after.people)).toHaveLength(1)
+    expect(after.trips[0].companionIds).toHaveLength(1)
+  })
+})
+
+describe('sync merge', () => {
+  it('keeps the newest version, honours tombstones and dedupes offline duplicates', async () => {
+    const local = await saveTrip({ ...emptyDraft('city'), line: '4', companions: ['Anna'] }, d)
+    const remote: Dataset = {
+      trips: [
+        { ...(local as CityTrip), line: '6', updatedAt: local.updatedAt + 1000, companionIds: ['remote-anna'] },
+        { ...local, id: 'gone', deleted: true, updatedAt: 1 },
+      ],
+      vehicleTypes: [],
+      vehicleUnits: [],
+      people: [{ id: 'remote-anna', name: 'Anna', createdAt: 0, updatedAt: 0 }],
+    }
+    await mergeIntoLocal(remote, d)
+    const ds = await loadAll(d)
+    const t = ds.trips.find((x) => x.id === local.id)!
+    expect(t.mode === 'city' && t.line).toBe('6')
+    expect(live(ds.people).map((p) => p.id)).toEqual(['remote-anna'])
+    expect(t.companionIds).toEqual(['remote-anna'])
+    expect(ds.trips.find((x) => x.id === 'gone')?.deleted).toBe(true)
+  })
+
+  it('dedupe is a no-op on clean data', async () => {
+    await saveTrip({ ...emptyDraft('car'), driver: 'A', manufacturer: 'Skoda', model: 'Octavia' }, d)
+    const { changed } = dedupe(await loadAll(d))
+    expect(Object.values(changed).flat()).toHaveLength(0)
+  })
+})
