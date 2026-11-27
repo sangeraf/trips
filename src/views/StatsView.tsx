@@ -53,14 +53,20 @@ export function StatsView({ ds }: { ds: Dataset }) {
       subtypes: groupBy(trips, (x) =>
         one(`${x.mode}|${subtypeOf(x)}`, subtypeLabel(x.mode, subtypeOf(x))),
       ),
-      lines: groupBy(trips, (x) => {
-        const k = lineKey(x)
-        return k ? one(k[0].key, lineLabel(x, t)) : null
-      }),
+      lines: (['city', 'long'] as const).map((m) => ({
+        mode: m,
+        items: groupBy(m === 'city' ? city : long, (x) => {
+          const k = lineKey(x)
+          return k ? one(k[0].key, lineLabel(x, t)) : null
+        }),
+      })),
       longCompanies: groupBy(long, (x) => (x.mode === 'long' && x.company ? one(normalize(x.company), x.company) : null)),
       delays: delayStats(long, (x) => lineLabel(x, t)),
       cities: groupBy(city, (x) => (x.mode === 'city' && x.city ? one(x.city.toLowerCase(), x.city) : null)),
-      routes: groupBy(trips, routeKey),
+      routes: (['city', 'long', 'car'] as const).map((m) => ({
+        mode: m,
+        items: groupBy(m === 'city' ? city : m === 'long' ? long : car, routeKey),
+      })),
       places: groupBy(trips, placeKeys),
       companies: groupBy(car, (x) =>
         x.mode === 'car' && x.carType === 'taxi' && x.company ? one(x.company.toLowerCase(), x.company) : null,
@@ -124,9 +130,13 @@ export function StatsView({ ds }: { ds: Dataset }) {
       </Section>
       {mode !== 'car' && (
         <>
-          <Section title={t('stats.topLines')}>
-            <BarList by={rank} items={s.lines} />
-          </Section>
+          {s.lines
+            .filter((l) => l.mode === mode || (!mode && l.items.length > 0))
+            .map((l) => (
+              <Section key={l.mode} title={mode ? t('stats.topLines') : `${t('stats.topLines')} · ${t(`mode.${l.mode}`)}`}>
+                <BarList by={rank} items={l.items} />
+              </Section>
+            ))}
           {mode !== 'long' && (
             <Section title={t('stats.topCities')}>
               <BarList by={rank} items={s.cities} limit={5} />
@@ -149,9 +159,13 @@ export function StatsView({ ds }: { ds: Dataset }) {
           )}
         </>
       )}
-      <Section title={t('stats.topRoutes')}>
-        <BarList by={rank} items={s.routes} showKm />
-      </Section>
+      {s.routes
+        .filter((r) => r.mode === mode || (!mode && r.items.length > 0))
+        .map((r) => (
+          <Section key={r.mode} title={mode ? t('stats.topRoutes') : `${t('stats.topRoutes')} · ${t(`mode.${r.mode}`)}`}>
+            <BarList by={rank} items={r.items} showKm />
+          </Section>
+        ))}
       <Section title={t('stats.topPlaces')}>
         <BarList items={s.places} countOnly />
       </Section>
