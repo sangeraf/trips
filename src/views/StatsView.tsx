@@ -170,8 +170,8 @@ export function StatsView({ ds }: { ds: Dataset }) {
 
       {mode === 'city' && (
         <>
-          {ranked(t('stats.bySubtype'), s.subtypes)}
           {ranked(t('stats.topCities'), s.cities, { limit: 5 })}
+          {ranked(t('stats.bySubtype'), s.subtypes)}
           {ranked(t('stats.topLines'), s.cityLines)}
           {ranked(t('stats.topRoutes'), s.routes)}
         </>
