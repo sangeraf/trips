@@ -4,7 +4,7 @@ import { BarList, StatTiles, type RankBy } from '../components/BarList'
 import { Card, Field, inputCls, Section, Segmented } from '../components/ui'
 import { hasBodyType, type Dataset, type Mode } from '../db/types'
 import { bodyTypeLabel, carriageLabel, lineLabel, seatColorLabel, subtypeLabel, useFormat } from '../i18n'
-import { avgMin, byMonth, delayStats, ON_TIME_MIN, filterTrips, groupBy, lineKey, one, placeKeys, rankValue, routeKey, STATS_RANKS, subtypeOf, summarize, type Agg } from '../lib/stats'
+import { avgMin, byMonth, byWeekday, delayStats, ON_TIME_MIN, filterTrips, groupBy, lineKey, one, placeKeys, rankValue, routeKey, STATS_RANKS, subtypeOf, summarize, type Agg } from '../lib/stats'
 import { normalize, todayIso } from '../lib/text'
 
 type Preset = 'all' | 'year' | 'month' | 'd30' | 'custom'
@@ -49,6 +49,7 @@ export function StatsView({ ds }: { ds: Dataset }) {
     return {
       total: summarize(trips),
       months: byMonth(trips),
+      weekdays: byWeekday(trips),
       modes: groupBy(trips, (x) => one(x.mode, t(`mode.${x.mode}`))),
       subtypes: groupBy(trips, (x) => one(`${x.mode}|${subtypeOf(x)}`, subtypeLabel(x.mode, subtypeOf(x)))),
       routes: groupBy(trips, routeKey),
@@ -92,7 +93,24 @@ export function StatsView({ ds }: { ds: Dataset }) {
           : avgMin(m) == null
             ? '—'
             : f.avg(avgMin(m)!)
-  const maxMonth = Math.max(1, ...s.months.map((m) => rankValue(m, rank)))
+  const multiYear = new Set(s.months.map((m) => m.key.slice(0, 4))).size > 1
+  const chart = (bars: { agg: Agg; label: string; sub?: string }[]) => {
+    const max = Math.max(1, ...bars.map((b) => rankValue(b.agg, rank)))
+    return (
+      <Card>
+        <div className="flex h-40 items-end gap-1 overflow-x-auto">
+          {bars.map(({ agg, label, sub }) => (
+            <div key={agg.key} className="flex min-w-[2.5rem] flex-1 flex-col items-center justify-end gap-1" title={f.agg(agg, true)}>
+              <span className="whitespace-nowrap text-[10px] text-slate-500">{monthValue(agg)}</span>
+              <div className="w-full rounded-t bg-teal-600" style={{ height: `${(rankValue(agg, rank) / max) * 100}px` }} />
+              <span className="text-[10px] text-slate-500">{label}</span>
+              {sub !== undefined && <span className="h-3 text-[10px] leading-3 text-slate-400">{sub}</span>}
+            </div>
+          ))}
+        </div>
+      </Card>
+    )
+  }
   const ranked = (title: string, items: Agg[], opts: { showKm?: boolean; limit?: number; hideEmpty?: boolean } = {}) =>
     opts.hideEmpty && !items.length ? null : (
       <Section title={title}>
@@ -149,17 +167,20 @@ export function StatsView({ ds }: { ds: Dataset }) {
 
       <Section title={t('stats.perMonth')}>
         {s.months.length ? (
-          <Card>
-            <div className="flex h-40 items-end gap-1 overflow-x-auto">
-              {s.months.map((m) => (
-                <div key={m.key} className="flex min-w-[2.5rem] flex-1 flex-col items-center justify-end gap-1" title={f.agg(m, true)}>
-                  <span className="whitespace-nowrap text-[10px] text-slate-500">{monthValue(m)}</span>
-                  <div className="w-full rounded-t bg-teal-600" style={{ height: `${(rankValue(m, rank) / maxMonth) * 100}px` }} />
-                  <span className="text-[10px] text-slate-500">{f.month(m.key)}</span>
-                </div>
-              ))}
-            </div>
-          </Card>
+          chart(
+            s.months.map((m, i) => ({
+              agg: m,
+              label: f.month(m.key),
+              sub: multiYear ? (i === 0 || m.key.endsWith('-01') ? m.key.slice(0, 4) : '') : undefined,
+            })),
+          )
+        ) : (
+          <p className="text-sm text-slate-500">{t('stats.none')}</p>
+        )}
+      </Section>
+      <Section title={t('stats.perWeekday')}>
+        {s.total.count ? (
+          chart(s.weekdays.map((d, i) => ({ agg: d, label: f.weekday(i) })))
         ) : (
           <p className="text-sm text-slate-500">{t('stats.none')}</p>
         )}

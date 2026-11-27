@@ -123,6 +123,16 @@ export function byMonth(trips: Trip[]): Agg[] {
   return groupBy(trips, (t) => one(t.date.slice(0, 7))).sort((a, b) => a.key.localeCompare(b.key))
 }
 
+/** Seven aggregates, Monday first (key '0') to Sunday ('6'), including empty days. */
+export function byWeekday(trips: Trip[]): Agg[] {
+  const days = Array.from({ length: 7 }, (_, i) => emptyAgg(String(i), ''))
+  for (const t of trips) {
+    if (!t.date) continue
+    add(days[(new Date(`${t.date}T12:00:00`).getDay() + 6) % 7], t)
+  }
+  return days
+}
+
 export interface PersonStats extends Agg {
   person: Person
   perMode: Record<Mode, number>

@@ -106,7 +106,9 @@ export function useFormat() {
       km: (n: number) => `${n.toLocaleString(locale, { maximumFractionDigits: 1 })} km`,
       date: (iso: string) =>
         new Date(`${iso}T12:00:00`).toLocaleDateString(locale, { year: 'numeric', month: 'short', day: 'numeric', weekday: 'short' }),
-      month: (ym: string) => new Date(`${ym}-15T12:00:00`).toLocaleDateString(locale, { year: '2-digit', month: 'short' }),
+      month: (ym: string) => new Date(`${ym}-15T12:00:00`).toLocaleDateString(locale, { month: 'short' }),
+      /** Short weekday name, 0 = Monday. */
+      weekday: (i: number) => new Date(2024, 0, 1 + i, 12).toLocaleDateString(locale, { weekday: 'short' }),
       dateTime: (ms: number) => new Date(ms).toLocaleString(locale, { dateStyle: 'short', timeStyle: 'short' }),
       t,
     }),
