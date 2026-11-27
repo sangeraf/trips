@@ -39,6 +39,7 @@ const hu: Messages = {
     distance: 'Távolság (km)',
     longType: 'Típus',
     lineType: 'Vonatnem / járatfajta',
+    lineName: 'Vonal / járat neve',
     numbertrain: 'Vonatszám',
     numbercoach: 'Járatszám',
     scheduled: 'Menetrend szerint',

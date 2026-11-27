@@ -52,7 +52,7 @@ export function exportCsv(ds: Dataset): string {
         t.mode,
         car ? t.carType : city ? t.transitType : t.longType,
         long ? '' : t.city,
-        city ? t.line : '',
+        city ? t.line : long ? t.lineName : '',
         city ? '' : t.company,
         car && t.driverId ? people.get(t.driverId) : '',
         car ? t.startPlace : t.from,

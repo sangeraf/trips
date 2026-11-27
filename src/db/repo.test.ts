@@ -157,6 +157,7 @@ describe('long-distance trips', () => {
     longType: 'train' as const,
     company: 'MÁV',
     lineType: 'InterCity',
+    lineName: 'Hernád',
     number: '560',
     from: 'Budapest-Keleti',
     to: 'Miskolc-Tiszai',
@@ -191,7 +192,7 @@ describe('long-distance trips', () => {
     const t = await saveTrip(draft(), d)
     const ds = await loadAll(d)
     const back = tripToDraft(t, ds)
-    expect(back).toMatchObject({ lineType: 'InterCity', number: '560', actualArrival: '00:10', licence: '470 001', distanceKm: 183 })
+    expect(back).toMatchObject({ lineType: 'InterCity', lineName: 'Hernád', number: '560', actualArrival: '00:10', licence: '470 001', distanceKm: 183 })
     const again = await saveTrip({ ...back, actualArrival: '23:50' }, d)
     expect(again.id).toBe(t.id)
     expect(again.mode === 'long' && again.delayMin).toBe(0)

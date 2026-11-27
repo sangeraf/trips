@@ -37,6 +37,7 @@ const en = {
     distance: 'Distance (km)',
     longType: 'Type',
     lineType: 'Service type',
+    lineName: 'Line name / no.',
     numbertrain: 'Train number',
     numbercoach: 'Service number',
     scheduled: 'Scheduled',

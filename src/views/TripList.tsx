@@ -22,7 +22,7 @@ const badgeColor: Record<string, string> = {
 export function TripBadge({ trip }: { trip: Trip }) {
   const sub = subtypeOf(trip)
   const label = subtypeLabel(trip.mode, sub, true)
-  const tag = trip.mode === 'city' ? trip.line : trip.mode === 'long' ? `${trip.lineType} ${trip.number}`.trim() : ''
+  const tag = trip.mode === 'city' ? trip.line : trip.mode === 'long' ? trip.lineName || trip.lineType : ''
   return (
     <span className={`inline-flex shrink-0 items-center gap-1 rounded px-2 py-0.5 text-xs font-bold text-white ${badgeColor[sub]}`}>
       {label}
@@ -114,7 +114,7 @@ export function TripList({ ds, onOpen }: { ds: Dataset; onOpen: (t: Trip) => voi
             const extra =
               tr.mode === 'long'
                 ? [
-                    tr.company,
+                    [tr.company, tr.lineName && tr.lineType, tr.number].filter(Boolean).join(' '),
                     actualTimes && `${t('field.actual')}: ${actualTimes}`,
                     tr.delayMin != null && `${t('field.delay')}: ${f.delay(tr.delayMin)}`,
                     tr.distanceKm ? f.km(tr.distanceKm) : '',

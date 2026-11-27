@@ -73,6 +73,9 @@ export interface LongTrip extends TripBase {
   company: string
   /** e.g. InterCity, regional */
   lineType: string
+  /** Line name or number, e.g. S70, Tokaj; part of the line grouping. */
+  lineName: string
+  /** Service number, e.g. 1235; never grouped on. */
   number: string
   from: string
   to: string
