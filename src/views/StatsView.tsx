@@ -3,8 +3,8 @@ import { useTranslation } from 'react-i18next'
 import { BarList, StatTiles, type RankBy } from '../components/BarList'
 import { Card, Field, inputCls, Section, Segmented } from '../components/ui'
 import { hasBodyType, type Dataset, type Mode } from '../db/types'
-import { bodyTypeLabel, carriageLabel, seatColorLabel, useFormat } from '../i18n'
-import { avgMin, byMonth, filterTrips, groupBy, lineKey, one, placeKeys, RANKS, routeKey, subtypeOf, summarize } from '../lib/stats'
+import { bodyTypeLabel, carriageLabel, lineLabel, seatColorLabel, subtypeLabel, useFormat } from '../i18n'
+import { avgMin, byMonth, delayStats, ON_TIME_MIN, filterTrips, groupBy, lineKey, one, placeKeys, RANKS, routeKey, subtypeOf, summarize } from '../lib/stats'
 import { normalize, todayIso } from '../lib/text'
 
 type Preset = 'all' | 'year' | 'month' | 'd30' | 'custom'
@@ -31,6 +31,7 @@ export function StatsView({ ds }: { ds: Dataset }) {
     const trips = filterTrips(ds.trips, { from, to, mode })
     const city = trips.filter((x) => x.mode === 'city')
     const car = trips.filter((x) => x.mode === 'car')
+    const long = trips.filter((x) => x.mode === 'long')
     const unitType = new Map(ds.vehicleUnits.map((u) => [u.id, u.vehicleTypeId]))
     const types = new Map(ds.vehicleTypes.map((v) => [v.id, v]))
     return {
@@ -50,13 +51,15 @@ export function StatsView({ ds }: { ds: Dataset }) {
       total: summarize(trips),
       modes: groupBy(trips, (x) => one(x.mode, t(`mode.${x.mode}`))),
       subtypes: groupBy(trips, (x) =>
-        one(`${x.mode}|${subtypeOf(x)}`, t(x.mode === 'car' ? `carType.${subtypeOf(x)}` : `cityType.${subtypeOf(x)}`)),
+        one(`${x.mode}|${subtypeOf(x)}`, subtypeLabel(x.mode, subtypeOf(x))),
       ),
-      lines: groupBy(city, (x) => {
+      lines: groupBy(trips, (x) => {
         const k = lineKey(x)
-        return k && x.mode === 'city' ? one(k[0].key, `${t(`cityTypeShort.${x.transitType}`)} ${x.line}${x.city ? ` · ${x.city}` : ''}`) : null
+        return k ? one(k[0].key, lineLabel(x, t)) : null
       }),
-      cities: groupBy(city, (x) => (x.city ? one(x.city.toLowerCase(), x.city) : null)),
+      longCompanies: groupBy(long, (x) => (x.mode === 'long' && x.company ? one(normalize(x.company), x.company) : null)),
+      delays: delayStats(long, (x) => lineLabel(x, t)),
+      cities: groupBy(city, (x) => (x.mode === 'city' && x.city ? one(x.city.toLowerCase(), x.city) : null)),
       routes: groupBy(trips, routeKey),
       places: groupBy(trips, placeKeys),
       companies: groupBy(car, (x) =>
@@ -92,6 +95,7 @@ export function StatsView({ ds }: { ds: Dataset }) {
             { value: '' as const, label: t('common.allModes') },
             { value: 'city' as const, label: t('mode.city') },
             { value: 'car' as const, label: t('mode.car') },
+            { value: 'long' as const, label: t('mode.long') },
           ]}
         />
         <Segmented
@@ -123,9 +127,11 @@ export function StatsView({ ds }: { ds: Dataset }) {
           <Section title={t('stats.topLines')}>
             <BarList by={rank} items={s.lines} />
           </Section>
-          <Section title={t('stats.topCities')}>
-            <BarList by={rank} items={s.cities} limit={5} />
-          </Section>
+          {mode !== 'long' && (
+            <Section title={t('stats.topCities')}>
+              <BarList by={rank} items={s.cities} limit={5} />
+            </Section>
+          )}
           {s.bodyTypes.length > 0 && (
             <Section title={t('stats.bodyTypes')}>
               <BarList by={rank} items={s.bodyTypes} />
@@ -152,6 +158,35 @@ export function StatsView({ ds }: { ds: Dataset }) {
       {mode !== 'city' && s.companies.length > 0 && (
         <Section title={t('stats.taxiCompanies')}>
           <BarList by={rank} items={s.companies} showKm />
+        </Section>
+      )}
+      {(!mode || mode === 'long') && s.longCompanies.length > 0 && (
+        <Section title={t('stats.longCompanies')}>
+          <BarList by={rank} items={s.longCompanies} showKm />
+        </Section>
+      )}
+      {(!mode || mode === 'long') && s.delays.count > 0 && (
+        <Section title={t('stats.delays')}>
+          <StatTiles
+            tiles={[
+              { label: t('stats.avgDelay'), value: f.delay(Math.round(s.delays.avg * 10) / 10) },
+              { label: t('stats.onTime', { n: ON_TIME_MIN }), value: `${Math.round((s.delays.onTime / s.delays.count) * 100)}%` },
+              { label: t('stats.maxDelay'), value: f.delay(s.delays.max) },
+            ]}
+          />
+          {s.delays.byLine.length > 0 && (
+            <div className="mt-3 space-y-1">
+              <h3 className="text-sm font-semibold text-slate-600 dark:text-slate-300">{t('stats.delayByLine')}</h3>
+              {s.delays.byLine.slice(0, 10).map((l) => (
+                <Card key={l.key} className="flex items-baseline justify-between gap-2 text-sm">
+                  <span className="min-w-0 break-words">{l.label}</span>
+                  <span className="shrink-0 text-slate-500">
+                    {l.count}× · Ø {f.delay(Math.round(l.avg * 10) / 10)}
+                  </span>
+                </Card>
+              ))}
+            </div>
+          )}
         </Section>
       )}
       <Section title={t('stats.perMonth')}>

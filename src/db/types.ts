@@ -1,11 +1,14 @@
-export type Mode = 'car' | 'city'
-export const MODES: Mode[] = ['car', 'city']
+export type Mode = 'car' | 'city' | 'long'
+export const MODES: Mode[] = ['car', 'city', 'long']
 
 export type CarType = 'taxi' | 'personal'
 export const CAR_TYPES: CarType[] = ['taxi', 'personal']
 
 export type CityType = 'metro' | 'tram' | 'trolleybus' | 'bus' | 'commuter'
 export const CITY_TYPES: CityType[] = ['metro', 'tram', 'trolleybus', 'bus', 'commuter']
+
+export type LongType = 'train' | 'coach'
+export const LONG_TYPES: LongType[] = ['train', 'coach']
 
 export const HEV_CARRIAGES = ['1', '2', '3']
 export const SEAT_COLORS = ['brown', 'red', 'blue', 'mav', 'new']
@@ -14,7 +17,7 @@ export const hasBodyType = (subtype: string | null | undefined) => subtype === '
 
 /** Rail vehicles and trolleybuses carry a registration number ("pályaszám"), road vehicles a licence plate. */
 export function plateKind(mode: Mode, subtype: string): 'licence' | 'reg' {
-  return mode === 'city' && subtype !== 'bus' ? 'reg' : 'licence'
+  return (mode === 'city' && subtype !== 'bus') || (mode === 'long' && subtype === 'train') ? 'reg' : 'licence'
 }
 
 /** Every synced record carries these fields; `deleted` records are tombstones kept so deletions sync. */
@@ -28,7 +31,7 @@ export interface SyncRecord {
 interface TripBase extends SyncRecord {
   /** YYYY-MM-DD */
   date: string
-  /** HH:MM */
+  /** HH:MM; scheduled times for long-distance trips */
   departureTime: string
   /** HH:MM */
   arrivalTime: string
@@ -63,7 +66,26 @@ export interface CityTrip extends TripBase {
   seatColor?: string
 }
 
-export type Trip = CarTrip | CityTrip
+/** Long distance: TripBase times and duration are the scheduled ones. */
+export interface LongTrip extends TripBase {
+  mode: 'long'
+  longType: LongType
+  company: string
+  /** e.g. InterCity, regional */
+  lineType: string
+  number: string
+  from: string
+  to: string
+  distanceKm: number | null
+  actualDeparture: string
+  actualArrival: string
+  actualDurationMin: number | null
+  actualDurationManual: boolean
+  /** Actual minus scheduled arrival in minutes; negative when early. */
+  delayMin: number | null
+}
+
+export type Trip = CarTrip | CityTrip | LongTrip
 
 /** Car vehicles form one pool (subtype ''); city vehicles are grouped by transit type. */
 export interface VehicleType extends SyncRecord {
@@ -91,6 +113,6 @@ export interface Dataset {
   people: Person[]
 }
 
-export function vehicleSubtype(trip: Pick<Trip, 'mode'> & { transitType?: CityType }): string {
-  return trip.mode === 'city' ? (trip.transitType ?? '') : ''
+export function vehicleSubtype(trip: Pick<Trip, 'mode'> & { transitType?: CityType; longType?: LongType }): string {
+  return trip.mode === 'city' ? (trip.transitType ?? '') : trip.mode === 'long' ? (trip.longType ?? '') : ''
 }

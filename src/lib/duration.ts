@@ -15,6 +15,15 @@ export function calcDuration(dep: string, arr: string): number | null {
   return a >= d ? a - d : a + 1440 - d
 }
 
+/** Signed minutes from scheduled to actual time, taking the nearer day (23:50 → 00:10 is +20). */
+export function calcDelay(scheduled: string, actual: string): number | null {
+  const s = parseTime(scheduled)
+  const a = parseTime(actual)
+  if (s === null || a === null) return null
+  const d = (((a - s) % 1440) + 1440) % 1440
+  return d >= 720 ? d - 1440 : d
+}
+
 /** Accepts "85", "1:25" or "1h 25m" style input. */
 export function parseDuration(s: string): number | null {
   const t = s.trim().toLowerCase()

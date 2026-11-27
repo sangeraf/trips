@@ -28,11 +28,15 @@ export interface Agg {
 
 const emptyAgg = (key: string, label: string): Agg => ({ key, label, count: 0, minutes: 0, timed: 0, km: 0, first: '', last: '' })
 
+/** Time spent: the actual duration of a long-distance trip when known, otherwise the (scheduled) duration. */
+export const elapsedMin = (t: Trip) => (t.mode === 'long' ? (t.actualDurationMin ?? t.durationMin) : t.durationMin)
+
 function add(a: Agg, t: Trip) {
+  const min = elapsedMin(t)
   a.count++
-  a.minutes += t.durationMin ?? 0
-  if (t.durationMin != null) a.timed++
-  a.km += t.mode === 'car' ? (t.distanceKm ?? 0) : 0
+  a.minutes += min ?? 0
+  if (min != null) a.timed++
+  a.km += t.mode === 'city' ? 0 : (t.distanceKm ?? 0)
   if (!a.first || t.date < a.first) a.first = t.date
   if (!a.last || t.date > a.last) a.last = t.date
 }
@@ -59,11 +63,48 @@ export function groupBy(trips: Trip[], keys: (t: Trip) => { key: string; label: 
 
 export const one = (key: string, label = key) => [{ key, label }]
 
-export const subtypeOf = (t: Trip) => (t.mode === 'car' ? t.carType : t.transitType)
+export const subtypeOf = (t: Trip) => (t.mode === 'car' ? t.carType : t.mode === 'city' ? t.transitType : t.longType)
 
 export function lineKey(t: Trip) {
+  if (t.mode === 'long') {
+    if (!t.lineType && !t.number) return null
+    const label = `${t.lineType} ${t.number}`.trim()
+    return one(`long|${t.longType}|${normalize(t.company)}|${normalize(label)}`, label)
+  }
   if (t.mode !== 'city' || !t.line) return null
   return one(`${t.city.toLowerCase()}|${t.transitType}|${t.line.toLowerCase()}`, t.line)
+}
+
+export interface DelayStats {
+  count: number
+  avg: number
+  onTime: number
+  max: number
+  byLine: { key: string; label: string; count: number; avg: number }[]
+}
+
+/** Up to this many minutes late still counts as on time (the usual railway threshold). */
+export const ON_TIME_MIN = 5
+
+export function delayStats(trips: Trip[], label: (t: Trip) => string): DelayStats {
+  const timed = trips.filter((t) => t.mode === 'long' && t.delayMin != null) as (Trip & { delayMin: number })[]
+  const lines = new Map<string, { key: string; label: string; count: number; sum: number }>()
+  for (const t of timed) {
+    const k = lineKey(t)?.[0]
+    if (!k) continue
+    const g = lines.get(k.key) ?? { key: k.key, label: label(t), count: 0, sum: 0 }
+    g.count++
+    g.sum += t.delayMin
+    lines.set(k.key, g)
+  }
+  const sum = timed.reduce((n, t) => n + t.delayMin, 0)
+  return {
+    count: timed.length,
+    avg: timed.length ? sum / timed.length : 0,
+    onTime: timed.filter((t) => t.delayMin <= ON_TIME_MIN).length,
+    max: Math.max(0, ...timed.map((t) => t.delayMin)),
+    byLine: [...lines.values()].map((g) => ({ ...g, avg: g.sum / g.count })).sort((a, b) => b.avg - a.avg || b.count - a.count),
+  }
 }
 
 export function routeKey(t: Trip) {
@@ -91,7 +132,7 @@ export function peopleStats(trips: Trip[], people: Person[]): PersonStats[] {
   const byId = new Map<string, PersonStats>()
   for (const p of people) {
     if (p.deleted) continue
-    byId.set(p.id, { ...emptyAgg(p.id, p.name), person: p, perMode: { car: 0, city: 0 }, driven: 0 })
+    byId.set(p.id, { ...emptyAgg(p.id, p.name), person: p, perMode: { car: 0, city: 0, long: 0 }, driven: 0 })
   }
   for (const t of trips) {
     if (t.deleted) continue

@@ -57,7 +57,7 @@ export function placeOptions(trips: Trip[], mode: Mode, city = ''): Option[] {
   return countValues(
     sameMode(trips, mode).flatMap((t) => {
       if (t.mode === 'car') return [{ value: t.startPlace }, { value: t.endPlace }]
-      const boost = boostIf(!!c && normalize(t.city) === c)
+      const boost = boostIf(!!c && t.mode === 'city' && normalize(t.city) === c)
       return [
         { value: t.from, boost },
         { value: t.to, boost },
@@ -67,7 +67,7 @@ export function placeOptions(trips: Trip[], mode: Mode, city = ''): Option[] {
 }
 
 export function cityOptions(trips: Trip[], mode: Mode): Option[] {
-  return countValues(sameMode(trips, mode).map((t) => ({ value: t.city })))
+  return countValues(sameMode(trips, mode).map((t) => ({ value: t.mode === 'long' ? '' : t.city })))
 }
 
 export function lineOptions(trips: Trip[], city: string, transitType: string): Option[] {
@@ -76,6 +76,18 @@ export function lineOptions(trips: Trip[], city: string, transitType: string): O
     sameMode(trips, 'city').flatMap((t) =>
       t.mode === 'city' && (!c || normalize(t.city) === c)
         ? [{ value: t.line, boost: boostIf(t.transitType === transitType) }]
+        : [],
+    ),
+  )
+}
+
+/** Long-distance company, line type or number; values from the same train/coach type come first. */
+export function longOptions(trips: Trip[], field: 'company' | 'lineType' | 'number', longType: string, company = ''): Option[] {
+  const c = normalize(company)
+  return countValues(
+    sameMode(trips, 'long').flatMap((t) =>
+      t.mode === 'long'
+        ? [{ value: t[field], boost: boostIf(t.longType === longType) + boostIf(!!c && field !== 'company' && normalize(t.company) === c) }]
         : [],
     ),
   )
