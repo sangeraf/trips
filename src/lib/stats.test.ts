@@ -33,6 +33,7 @@ describe('long-distance stats', () => {
     expect(lineKey(trip('Tokaj', 0, null, '236'))?.[0]).toEqual(lineKey(trip('Tokaj', 5, null, '238'))?.[0])
     expect(lineKey(trip('Tokaj', 0))?.[0].label).toBe('MÁV IC Tokaj')
     expect(lineKey(trip('', 0))?.[0].label).toBe('MÁV IC')
+    expect(lineKey({ ...trip('', 0), lineType: '' } as Trip)?.[0].label).toBe('MÁV')
     expect(lineKey(trip('Tokaj', 0))?.[0].key).not.toBe(lineKey(trip('Hernád', 0))?.[0].key)
   })
   it('averages delays, counts on-time trips and ranks lines by average delay', () => {

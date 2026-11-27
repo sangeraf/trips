@@ -68,7 +68,7 @@ export const subtypeOf = (t: Trip) => (t.mode === 'car' ? t.carType : t.mode ===
 export function lineKey(t: Trip) {
   if (t.mode === 'long') {
     const name = t.lineName ?? ''
-    if (!t.lineType && !name) return null
+    if (!t.company && !t.lineType && !name) return null
     const label = [t.company, t.lineType, name].filter(Boolean).join(' ')
     return one(`long|${t.longType}|${normalize(t.company)}|${normalize(t.lineType)}|${normalize(name)}`, label)
   }
