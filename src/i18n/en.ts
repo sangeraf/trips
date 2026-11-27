@@ -91,6 +91,7 @@ const en = {
     carriages: 'Commuter carriages',
     seatColors: 'Commuter seat colours',
     perMonth: 'Per month',
+    perWeekday: 'Per weekday',
     lineTypes: 'Service types',
     companies: 'Companies',
     from: 'From',

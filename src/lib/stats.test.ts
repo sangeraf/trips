@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { Trip } from '../db/types'
-import { avgMin, delayStats, elapsedMin, lineKey, sortAgg, type Agg } from './stats'
+import { avgMin, byWeekday, delayStats, elapsedMin, lineKey, sortAgg, type Agg } from './stats'
 
 const agg = (label: string, count: number, minutes: number, timed = count): Agg => ({ key: label, label, count, minutes, timed, km: 0, first: '', last: '' })
 
@@ -40,5 +40,13 @@ describe('long-distance stats', () => {
     const s = delayStats([trip('1', 10), trip('1', 20), trip('2', -2), trip('2', 5), trip('3', null)], (t) => (t.mode === 'long' ? t.lineName : ''))
     expect(s).toMatchObject({ count: 4, avg: 8.25, onTime: 2, max: 20 })
     expect(s.byLine.map((l) => [l.label, l.avg])).toEqual([['1', 15], ['2', 1.5]])
+  })
+})
+
+describe('byWeekday', () => {
+  it('buckets trips Monday first and keeps empty days', () => {
+    const d = (date: string) => ({ date, mode: 'city', durationMin: 10 }) as unknown as Trip
+    const w = byWeekday([d('2026-11-23'), d('2026-11-29'), d('2026-11-30'), d('2026-13-01'), d('')])
+    expect(w.map((x) => x.count)).toEqual([2, 0, 0, 0, 0, 0, 1])
   })
 })

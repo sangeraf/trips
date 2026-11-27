@@ -93,6 +93,7 @@ const hu: Messages = {
     carriages: 'HÉV kocsik',
     seatColors: 'HÉV ülésszínek',
     perMonth: 'Havonta',
+    perWeekday: 'A hét napjai szerint',
     lineTypes: 'Vonatnemek / járatfajták',
     companies: 'Társaságok',
     from: 'Ettől',
