@@ -4,7 +4,7 @@ import { BarList, StatTiles, type RankBy } from '../components/BarList'
 import { Card, Field, inputCls, Section, Segmented } from '../components/ui'
 import { hasBodyType, type Dataset, type Mode } from '../db/types'
 import { bodyTypeLabel, carriageLabel, lineLabel, seatColorLabel, subtypeLabel, useFormat } from '../i18n'
-import { avgMin, byMonth, delayStats, ON_TIME_MIN, filterTrips, groupBy, lineKey, one, placeKeys, RANKS, routeKey, subtypeOf, summarize } from '../lib/stats'
+import { avgMin, byMonth, delayStats, ON_TIME_MIN, filterTrips, groupBy, lineKey, one, placeKeys, rankValue, routeKey, STATS_RANKS, subtypeOf, summarize, type Agg } from '../lib/stats'
 import { normalize, todayIso } from '../lib/text'
 
 type Preset = 'all' | 'year' | 'month' | 'd30' | 'custom'
@@ -26,15 +26,38 @@ export function StatsView({ ds }: { ds: Dataset }) {
   const [mode, setMode] = useState<Mode | ''>('')
   const [rank, setRank] = useState<RankBy>('count')
   const { from, to } = preset === 'custom' ? custom : presetRange(preset)
+  const byDistance = rank === 'distance'
+
+  const chooseRank = (r: RankBy) => {
+    setRank(r)
+    if (r === 'distance' && mode === 'city') setMode('')
+  }
 
   const s = useMemo(() => {
-    const trips = filterTrips(ds.trips, { from, to, mode })
+    const all = filterTrips(ds.trips, { from, to, mode })
+    const trips = byDistance ? all.filter((x) => x.mode !== 'city') : all
     const city = trips.filter((x) => x.mode === 'city')
     const car = trips.filter((x) => x.mode === 'car')
     const long = trips.filter((x) => x.mode === 'long')
     const unitType = new Map(ds.vehicleUnits.map((u) => [u.id, u.vehicleTypeId]))
     const types = new Map(ds.vehicleTypes.map((v) => [v.id, v]))
+    const lines = (list: typeof trips) =>
+      groupBy(list, (x) => {
+        const k = lineKey(x)
+        return k ? one(k[0].key, lineLabel(x, t)) : null
+      })
     return {
+      total: summarize(trips),
+      months: byMonth(trips),
+      modes: groupBy(trips, (x) => one(x.mode, t(`mode.${x.mode}`))),
+      subtypes: groupBy(trips, (x) => one(`${x.mode}|${subtypeOf(x)}`, subtypeLabel(x.mode, subtypeOf(x)))),
+      routes: groupBy(trips, routeKey),
+      places: groupBy(trips, placeKeys),
+      taxiCompanies: groupBy(car, (x) =>
+        x.mode === 'car' && x.carType === 'taxi' && x.company ? one(x.company.toLowerCase(), x.company) : null,
+      ),
+      cities: groupBy(city, (x) => (x.mode === 'city' && x.city ? one(x.city.toLowerCase(), x.city) : null)),
+      cityLines: lines(city),
       bodyTypes: groupBy(city, (x) => {
         if (x.mode !== 'city' || !hasBodyType(x.transitType) || !x.vehicleUnitId) return null
         const vt = types.get(unitType.get(x.vehicleUnitId) ?? '')
@@ -48,34 +71,35 @@ export function StatsView({ ds }: { ds: Dataset }) {
       seatColors: groupBy(city, (x) =>
         x.mode === 'city' && x.transitType === 'commuter' && x.seatColor ? one(normalize(x.seatColor), seatColorLabel(x.seatColor)) : null,
       ),
-      total: summarize(trips),
-      modes: groupBy(trips, (x) => one(x.mode, t(`mode.${x.mode}`))),
-      subtypes: groupBy(trips, (x) =>
-        one(`${x.mode}|${subtypeOf(x)}`, subtypeLabel(x.mode, subtypeOf(x))),
-      ),
-      lines: (['city', 'long'] as const).map((m) => ({
-        mode: m,
-        items: groupBy(m === 'city' ? city : long, (x) => {
-          const k = lineKey(x)
-          return k ? one(k[0].key, lineLabel(x, t)) : null
-        }),
-      })),
       longCompanies: groupBy(long, (x) => (x.mode === 'long' && x.company ? one(normalize(x.company), x.company) : null)),
-      delays: delayStats(long, (x) => lineLabel(x, t)),
-      cities: groupBy(city, (x) => (x.mode === 'city' && x.city ? one(x.city.toLowerCase(), x.city) : null)),
-      routes: (['city', 'long', 'car'] as const).map((m) => ({
-        mode: m,
-        items: groupBy(m === 'city' ? city : m === 'long' ? long : car, routeKey),
-      })),
-      places: groupBy(trips, placeKeys),
-      companies: groupBy(car, (x) =>
-        x.mode === 'car' && x.carType === 'taxi' && x.company ? one(x.company.toLowerCase(), x.company) : null,
+      lineTypes: groupBy(long, (x) =>
+        x.mode === 'long' && x.lineType
+          ? one(`${x.longType}|${normalize(x.company)}|${normalize(x.lineType)}`, [x.company, x.lineType].filter(Boolean).join(' '))
+          : null,
       ),
-      months: byMonth(trips),
+      longLines: lines(long),
+      delays: delayStats(long, (x) => lineLabel(x, t)),
     }
-  }, [ds.trips, ds.vehicleUnits, ds.vehicleTypes, from, to, mode, t])
+  }, [ds.trips, ds.vehicleUnits, ds.vehicleTypes, from, to, mode, byDistance, t])
 
-  const maxMonth = Math.max(1, ...s.months.map((m) => m.count))
+  const monthValue = (m: Agg) =>
+    rank === 'count'
+      ? String(m.count)
+      : rank === 'time'
+        ? f.hours(m.minutes)
+        : rank === 'distance'
+          ? f.km(m.km)
+          : avgMin(m) == null
+            ? '—'
+            : f.avg(avgMin(m)!)
+  const maxMonth = Math.max(1, ...s.months.map((m) => rankValue(m, rank)))
+  const ranked = (title: string, items: Agg[], opts: { showKm?: boolean; limit?: number; hideEmpty?: boolean } = {}) =>
+    opts.hideEmpty && !items.length ? null : (
+      <Section title={title}>
+        <BarList by={rank} items={items} showKm={opts.showKm} limit={opts.limit} />
+      </Section>
+    )
+
   return (
     <div className="space-y-5">
       <div className="space-y-2">
@@ -99,16 +123,12 @@ export function StatsView({ ds }: { ds: Dataset }) {
           onChange={setMode}
           options={[
             { value: '' as const, label: t('common.allModes') },
-            { value: 'city' as const, label: t('mode.city') },
+            ...(byDistance ? [] : [{ value: 'city' as const, label: t('mode.city') }]),
             { value: 'car' as const, label: t('mode.car') },
             { value: 'long' as const, label: t('mode.long') },
           ]}
         />
-        <Segmented
-          value={rank}
-          onChange={setRank}
-          options={RANKS.map((r) => ({ value: r, label: t(`stats.rankBy.${r}`) }))}
-        />
+        <Segmented value={rank} onChange={chooseRank} options={STATS_RANKS.map((r) => ({ value: r, label: t(`stats.rankBy.${r}`) }))} />
       </div>
 
       <StatTiles
@@ -116,101 +136,18 @@ export function StatsView({ ds }: { ds: Dataset }) {
           { label: t('stats.trips'), value: String(s.total.count) },
           { label: t('stats.time'), value: f.hours(s.total.minutes) },
           { label: t('stats.avg'), value: avgMin(s.total) == null ? '—' : f.avg(avgMin(s.total)!) },
-          { label: t('stats.distance'), value: f.km(s.total.km) },
+          ...(mode === 'city' ? [] : [{ label: t('stats.distance'), value: f.km(s.total.km) }]),
         ]}
       />
 
-      {!mode && (
-        <Section title={t('stats.byMode')}>
-          <BarList by={rank} items={s.modes} showKm />
-        </Section>
-      )}
-      <Section title={t('stats.bySubtype')}>
-        <BarList by={rank} items={s.subtypes} showKm />
-      </Section>
-      {mode !== 'car' && (
-        <>
-          {s.lines
-            .filter((l) => l.mode === mode || (!mode && l.items.length > 0))
-            .map((l) => (
-              <Section key={l.mode} title={mode ? t('stats.topLines') : `${t('stats.topLines')} · ${t(`mode.${l.mode}`)}`}>
-                <BarList by={rank} items={l.items} />
-              </Section>
-            ))}
-          {mode !== 'long' && (
-            <Section title={t('stats.topCities')}>
-              <BarList by={rank} items={s.cities} limit={5} />
-            </Section>
-          )}
-          {s.bodyTypes.length > 0 && (
-            <Section title={t('stats.bodyTypes')}>
-              <BarList by={rank} items={s.bodyTypes} />
-            </Section>
-          )}
-          {s.carriages.length > 0 && (
-            <Section title={t('stats.carriages')}>
-              <BarList by={rank} items={s.carriages} />
-            </Section>
-          )}
-          {s.seatColors.length > 0 && (
-            <Section title={t('stats.seatColors')}>
-              <BarList by={rank} items={s.seatColors} />
-            </Section>
-          )}
-        </>
-      )}
-      {s.routes
-        .filter((r) => r.mode === mode || (!mode && r.items.length > 0))
-        .map((r) => (
-          <Section key={r.mode} title={mode ? t('stats.topRoutes') : `${t('stats.topRoutes')} · ${t(`mode.${r.mode}`)}`}>
-            <BarList by={rank} items={r.items} showKm />
-          </Section>
-        ))}
-      <Section title={t('stats.topPlaces')}>
-        <BarList items={s.places} countOnly />
-      </Section>
-      {mode !== 'city' && s.companies.length > 0 && (
-        <Section title={t('stats.taxiCompanies')}>
-          <BarList by={rank} items={s.companies} showKm />
-        </Section>
-      )}
-      {(!mode || mode === 'long') && s.longCompanies.length > 0 && (
-        <Section title={t('stats.longCompanies')}>
-          <BarList by={rank} items={s.longCompanies} showKm />
-        </Section>
-      )}
-      {(!mode || mode === 'long') && s.delays.count > 0 && (
-        <Section title={t('stats.delays')}>
-          <StatTiles
-            tiles={[
-              { label: t('stats.avgDelay'), value: f.delay(Math.round(s.delays.avg * 10) / 10) },
-              { label: t('stats.onTime', { n: ON_TIME_MIN }), value: `${Math.round((s.delays.onTime / s.delays.count) * 100)}%` },
-              { label: t('stats.maxDelay'), value: f.delay(s.delays.max) },
-            ]}
-          />
-          {s.delays.byLine.length > 0 && (
-            <div className="mt-3 space-y-1">
-              <h3 className="text-sm font-semibold text-slate-600 dark:text-slate-300">{t('stats.delayByLine')}</h3>
-              {s.delays.byLine.slice(0, 10).map((l) => (
-                <Card key={l.key} className="flex items-baseline justify-between gap-2 text-sm">
-                  <span className="min-w-0 break-words">{l.label}</span>
-                  <span className="shrink-0 text-slate-500">
-                    {l.count}× · Ø {f.delay(Math.round(l.avg * 10) / 10)}
-                  </span>
-                </Card>
-              ))}
-            </div>
-          )}
-        </Section>
-      )}
       <Section title={t('stats.perMonth')}>
         {s.months.length ? (
           <Card>
             <div className="flex h-40 items-end gap-1 overflow-x-auto">
               {s.months.map((m) => (
-                <div key={m.key} className="flex min-w-[2rem] flex-1 flex-col items-center justify-end gap-1" title={f.agg(m)}>
-                  <span className="text-xs text-slate-500">{m.count}</span>
-                  <div className="w-full rounded-t bg-teal-600" style={{ height: `${(m.count / maxMonth) * 100}px` }} />
+                <div key={m.key} className="flex min-w-[2.5rem] flex-1 flex-col items-center justify-end gap-1" title={f.agg(m, true)}>
+                  <span className="whitespace-nowrap text-[10px] text-slate-500">{monthValue(m)}</span>
+                  <div className="w-full rounded-t bg-teal-600" style={{ height: `${(rankValue(m, rank) / maxMonth) * 100}px` }} />
                   <span className="text-[10px] text-slate-500">{f.month(m.key)}</span>
                 </div>
               ))}
@@ -220,6 +157,83 @@ export function StatsView({ ds }: { ds: Dataset }) {
           <p className="text-sm text-slate-500">{t('stats.none')}</p>
         )}
       </Section>
+
+      {!mode && ranked(t('stats.byMode'), s.modes, { showKm: true })}
+
+      {mode === 'car' && (
+        <>
+          {ranked(t('stats.bySubtype'), s.subtypes, { showKm: true })}
+          {ranked(t('stats.taxiCompanies'), s.taxiCompanies, { showKm: true, hideEmpty: true })}
+          {ranked(t('stats.topRoutes'), s.routes, { showKm: true })}
+        </>
+      )}
+
+      {mode === 'city' && (
+        <>
+          {ranked(t('stats.bySubtype'), s.subtypes)}
+          {ranked(t('stats.topCities'), s.cities, { limit: 5 })}
+          {ranked(t('stats.topLines'), s.cityLines)}
+          {ranked(t('stats.topRoutes'), s.routes)}
+        </>
+      )}
+
+      {mode === 'long' && (
+        <>
+          {ranked(t('stats.bySubtype'), s.subtypes, { showKm: true })}
+          {ranked(t('stats.companies'), s.longCompanies, { showKm: true })}
+          {ranked(t('stats.lineTypes'), s.lineTypes, { showKm: true })}
+          {ranked(t('stats.topLines'), s.longLines, { showKm: true })}
+          {ranked(t('stats.topRoutes'), s.routes, { showKm: true })}
+        </>
+      )}
+
+      {mode && (
+        <Section title={t('stats.topPlaces')}>
+          <BarList items={s.places} countOnly />
+        </Section>
+      )}
+
+      {mode === 'city' && (
+        <>
+          {ranked(t('stats.bodyTypes'), s.bodyTypes, { hideEmpty: true })}
+          {ranked(t('stats.carriages'), s.carriages, { hideEmpty: true })}
+          {ranked(t('stats.seatColors'), s.seatColors, { hideEmpty: true })}
+        </>
+      )}
+
+      {mode === 'long' && (
+        <>
+          <Section title={t('stats.delays')}>
+            {s.delays.count > 0 ? (
+              <StatTiles
+                tiles={[
+                  { label: t('stats.avgDelay'), value: f.delay(Math.round(s.delays.avg * 10) / 10) },
+                  { label: t('stats.onTime', { n: ON_TIME_MIN }), value: `${Math.round((s.delays.onTime / s.delays.count) * 100)}%` },
+                  { label: t('stats.maxDelay'), value: f.delay(s.delays.max) },
+                ]}
+              />
+            ) : (
+              <p className="text-sm text-slate-500">{t('stats.none')}</p>
+            )}
+          </Section>
+          <Section title={t('stats.delayByLine')}>
+            {s.delays.byLine.length > 0 ? (
+              <div className="space-y-1">
+                {s.delays.byLine.slice(0, 10).map((l) => (
+                  <Card key={l.key} className="flex items-baseline justify-between gap-2 text-sm">
+                    <span className="min-w-0 break-words">{l.label}</span>
+                    <span className="shrink-0 text-slate-500">
+                      {l.count}× · Ø {f.delay(Math.round(l.avg * 10) / 10)}
+                    </span>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-slate-500">{t('stats.none')}</p>
+            )}
+          </Section>
+        </>
+      )}
     </div>
   )
 }
