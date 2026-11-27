@@ -28,9 +28,9 @@ export function StatsView({ ds }: { ds: Dataset }) {
   const { from, to } = preset === 'custom' ? custom : presetRange(preset)
   const byDistance = rank === 'distance'
 
-  const chooseRank = (r: RankBy) => {
-    setRank(r)
-    if (r === 'distance' && mode === 'city') setMode('')
+  const chooseMode = (m: Mode | '') => {
+    setMode(m)
+    if (m === 'city' && rank === 'distance') setRank('count')
   }
 
   const s = useMemo(() => {
@@ -120,15 +120,22 @@ export function StatsView({ ds }: { ds: Dataset }) {
         )}
         <Segmented
           value={mode}
-          onChange={setMode}
+          onChange={chooseMode}
           options={[
             { value: '' as const, label: t('common.allModes') },
-            ...(byDistance ? [] : [{ value: 'city' as const, label: t('mode.city') }]),
+            { value: 'city' as const, label: t('mode.city') },
             { value: 'car' as const, label: t('mode.car') },
             { value: 'long' as const, label: t('mode.long') },
           ]}
         />
-        <Segmented value={rank} onChange={chooseRank} options={STATS_RANKS.map((r) => ({ value: r, label: t(`stats.rankBy.${r}`) }))} />
+        <Segmented
+          value={rank}
+          onChange={setRank}
+          options={STATS_RANKS.filter((r) => !(mode === 'city' && r === 'distance')).map((r) => ({
+            value: r,
+            label: t(`stats.rankBy.${r}`),
+          }))}
+        />
       </div>
 
       <StatTiles
