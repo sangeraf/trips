@@ -4,8 +4,8 @@ import { BarList, StatTiles } from '../components/BarList'
 import { SortToggle } from '../components/SortToggle'
 import { btnCls, btnDangerCls, btnGhostCls, Card, Empty, Field, inputCls, Section, Segmented } from '../components/ui'
 import { deleteRecord, findTypeCollision, findUnitCollision, updateVehicleType, updateVehicleUnit } from '../db/repo'
-import { CITY_TYPES, hasBodyType, plateKind, type Dataset, type Mode } from '../db/types'
-import { bodyTypeFromText, bodyTypeLabel, carriageLabel, seatColorLabel, useFormat } from '../i18n'
+import { CITY_TYPES, LONG_TYPES, hasBodyType, plateKind, type Dataset, type Mode } from '../db/types'
+import { bodyTypeFromText, bodyTypeLabel, carriageLabel, seatColorLabel, useFormat, subtypeLabel } from '../i18n'
 import { avgMin, sortAgg, vehicleStats, type SortBy, type TypeStats, type UnitStats } from '../lib/stats'
 
 export function VehiclesView({ ds }: { ds: Dataset }) {
@@ -19,7 +19,7 @@ export function VehiclesView({ ds }: { ds: Dataset }) {
   const open = stats.find((s) => s.type.id === openId)
   if (open) return <TypeDetail s={open} all={stats} ds={ds} sort={unitSort} onSort={setUnitSort} onBack={() => setOpenId(null)} />
 
-  const subtypes = mode === 'city' ? CITY_TYPES : ['']
+  const subtypes: string[] = mode === 'city' ? CITY_TYPES : mode === 'long' ? LONG_TYPES : ['']
   const ofMode = stats.filter((s) => s.type.mode === mode)
   return (
     <div className="space-y-4">
@@ -29,6 +29,7 @@ export function VehiclesView({ ds }: { ds: Dataset }) {
         options={[
           { value: 'city' as const, label: t('mode.city') },
           { value: 'car' as const, label: t('mode.car') },
+          { value: 'long' as const, label: t('mode.long') },
         ]}
       />
       {ofMode.length > 0 && <SortToggle value={typeSort} onChange={setTypeSort} />}
@@ -40,7 +41,7 @@ export function VehiclesView({ ds }: { ds: Dataset }) {
         )
         if (!list.length) return null
         return (
-          <Section key={sub} title={sub ? t(`cityType.${sub}`) : t('mode.car')}>
+          <Section key={sub} title={sub ? subtypeLabel(mode, sub) : t('mode.car')}>
             {list.map((s) => (
               <Card key={s.key} onClick={() => setOpenId(s.type.id)}>
                 <div className="flex items-baseline justify-between gap-2">
@@ -101,7 +102,7 @@ function TypeDetail({
       <h1 className="text-xl font-semibold">
         {s.label || t('vehicles.unknownType')}
         <span className="ml-2 text-sm font-normal text-slate-500">
-          {[s.type.subtype ? t(`cityType.${s.type.subtype}`) : t('mode.car'), s.type.bodyType && bodyTypeLabel(s.type.bodyType)]
+          {[s.type.subtype ? subtypeLabel(s.type.mode, s.type.subtype) : t('mode.car'), s.type.bodyType && bodyTypeLabel(s.type.bodyType)]
             .filter(Boolean)
             .join(' · ')}
         </span>
@@ -167,7 +168,7 @@ function TypeDetail({
         ))}
       </Section>
 
-      {s.type.mode === 'city' && s.lines.length > 0 && (
+      {s.type.mode !== 'car' && s.lines.length > 0 && (
         <Section title={t('stats.topLines')}>
           <BarList items={s.lines} />
         </Section>

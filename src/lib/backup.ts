@@ -13,7 +13,7 @@ export function parseBackup(text: string): Dataset {
   if (!Array.isArray(j.trips)) throw new Error('Not a trips backup file')
   const valid = (t: Partial<Trip>) =>
     typeof t.id === 'string' &&
-    (t.mode === 'car' || t.mode === 'city') &&
+    (t.mode === 'car' || t.mode === 'city' || t.mode === 'long') &&
     typeof t.date === 'string' &&
     /^\d{4}-\d{2}-\d{2}$/.test(t.date) &&
     Array.isArray(t.companionIds) &&
@@ -35,7 +35,8 @@ export function exportCsv(ds: Dataset): string {
   const types = new Map(ds.vehicleTypes.map((t) => [t.id, t]))
   const header = [
     'date', 'mode', 'subtype', 'city', 'line', 'company', 'driver', 'from', 'to', 'departure', 'arrival',
-    'duration', 'distance_km', 'manufacturer', 'model', 'body_type', 'licence', 'carriage', 'seat_color', 'companions', 'notes',
+    'duration', 'distance_km', 'manufacturer', 'model', 'body_type', 'licence', 'carriage', 'seat_color', 'line_type', 'number', 'actual_departure', 'actual_arrival', 'actual_duration', 'delay_min',
+    'companions', 'notes',
   ]
   const rows = ds.trips
     .filter((t) => !t.deleted)
@@ -44,26 +45,34 @@ export function exportCsv(ds: Dataset): string {
       const unit = t.vehicleUnitId ? units.get(t.vehicleUnitId) : undefined
       const type = unit ? types.get(unit.vehicleTypeId) : undefined
       const car = t.mode === 'car'
+      const city = t.mode === 'city'
+      const long = t.mode === 'long'
       return [
         t.date,
         t.mode,
-        car ? t.carType : t.transitType,
-        t.city,
-        car ? '' : t.line,
-        car ? t.company : '',
+        car ? t.carType : city ? t.transitType : t.longType,
+        long ? '' : t.city,
+        city ? t.line : '',
+        city ? '' : t.company,
         car && t.driverId ? people.get(t.driverId) : '',
         car ? t.startPlace : t.from,
         car ? t.endPlace : t.to,
         t.departureTime,
         t.arrivalTime,
         formatDuration(t.durationMin),
-        car ? t.distanceKm : '',
+        city ? '' : t.distanceKm,
         type?.manufacturer,
         type?.model,
         type?.bodyType,
         unit?.licence,
-        car ? '' : t.carriage,
-        car ? '' : t.seatColor,
+        city ? t.carriage : '',
+        city ? t.seatColor : '',
+        long ? t.lineType : '',
+        long ? t.number : '',
+        long ? t.actualDeparture : '',
+        long ? t.actualArrival : '',
+        long ? formatDuration(t.actualDurationMin) : '',
+        long ? t.delayMin : '',
         t.companionIds.map((id) => people.get(id)).join(', '),
         t.notes,
       ].map(csvCell).join(',')

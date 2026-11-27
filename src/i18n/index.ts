@@ -2,7 +2,7 @@ import { avgMin, type Agg } from '../lib/stats'
 import i18n from 'i18next'
 import { useMemo } from 'react'
 import { initReactI18next, useTranslation } from 'react-i18next'
-import { BUS_BODY_TYPES, SEAT_COLORS } from '../db/types'
+import { BUS_BODY_TYPES, SEAT_COLORS, type Mode, type Trip } from '../db/types'
 import { clean, normalize } from '../lib/text'
 import { useSettings } from '../store/settings'
 import en from './en'
@@ -53,6 +53,18 @@ export function seatColorFromText(text: string): string {
 }
 
 /** Numeric HÉV carriages read as "2. kocsi" / "Carriage 2"; custom values as typed. */
+export function subtypeLabel(mode: Mode, sub: string, short = false): string {
+  const group = mode === 'car' ? 'carType' : mode === 'city' ? (short ? 'cityTypeShort' : 'cityType') : short ? 'longTypeShort' : 'longType'
+  return i18n.t(`${group}.${sub}`)
+}
+
+/** A line as shown in rankings: "Villamos 4 · Budapest", "InterCity 560 · MÁV". */
+export function lineLabel(t: Trip, tr: (key: string) => string = (k) => i18n.t(k)): string {
+  if (t.mode === 'city') return `${tr(`cityTypeShort.${t.transitType}`)} ${t.line}${t.city ? ` · ${t.city}` : ''}`
+  if (t.mode === 'long') return [`${t.lineType} ${t.number}`.trim(), t.company].filter(Boolean).join(' · ')
+  return ''
+}
+
 export function carriageLabel(stored: string): string {
   return /^\d+$/.test(stored) ? i18n.t('carriageN', { n: stored }) : stored
 }
@@ -78,6 +90,11 @@ export function useFormat() {
       avg: (min: number) => {
         const n = min.toLocaleString(locale, { minimumFractionDigits: 1, maximumFractionDigits: 1 })
         return inst.language === 'hu' ? `Ø ${n} p` : `Ø ${n} min`
+      },
+      /** Signed delay, e.g. "+12 min", "−3 min", "±0 min". */
+      delay: (min: number) => {
+        const n = Math.abs(min).toLocaleString(locale, { maximumFractionDigits: 1 })
+        return `${min > 0 ? '+' : min < 0 ? '−' : '±'}${n} ${inst.language === 'hu' ? 'p' : 'min'}`
       },
       /** "3× · 1 h 5 min · Ø 21.7 min", plus distance when asked and known. */
       agg(a: Agg, withKm = false) {

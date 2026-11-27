@@ -1,10 +1,10 @@
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, Empty, inputCls } from '../components/ui'
-import { CAR_TYPES, CITY_TYPES, type Dataset, type Mode, type Trip } from '../db/types'
-import { bodyTypeLabel, carriageLabel, seatColorLabel, useFormat } from '../i18n'
+import { CAR_TYPES, CITY_TYPES, LONG_TYPES, type Dataset, type Mode, type Trip } from '../db/types'
+import { bodyTypeLabel, carriageLabel, seatColorLabel, subtypeLabel, useFormat } from '../i18n'
 import { formatDuration } from '../lib/duration'
-import { subtypeOf } from '../lib/stats'
+import { elapsedMin, subtypeOf } from '../lib/stats'
 import { normalize } from '../lib/text'
 
 const badgeColor: Record<string, string> = {
@@ -15,16 +15,18 @@ const badgeColor: Record<string, string> = {
   commuter: 'bg-green-700',
   taxi: 'bg-amber-500',
   personal: 'bg-slate-600',
+  train: 'bg-indigo-700',
+  coach: 'bg-orange-600',
 }
 
 export function TripBadge({ trip }: { trip: Trip }) {
-  const { t } = useTranslation()
   const sub = subtypeOf(trip)
-  const label = trip.mode === 'city' ? t(`cityTypeShort.${sub}`) : t(`carType.${sub}`)
+  const label = subtypeLabel(trip.mode, sub, true)
+  const tag = trip.mode === 'city' ? trip.line : trip.mode === 'long' ? `${trip.lineType} ${trip.number}`.trim() : ''
   return (
     <span className={`inline-flex shrink-0 items-center gap-1 rounded px-2 py-0.5 text-xs font-bold text-white ${badgeColor[sub]}`}>
       {label}
-      {trip.mode === 'city' && trip.line && <span className="rounded bg-white/25 px-1">{trip.line}</span>}
+      {tag && <span className="rounded bg-white/25 px-1">{tag}</span>}
     </span>
   )
 }
@@ -68,7 +70,7 @@ export function TripList({ ds, onOpen }: { ds: Dataset; onOpen: (t: Trip) => voi
     return [...m.entries()]
   }, [list])
 
-  const subs = mode === 'car' ? CAR_TYPES : mode === 'city' ? CITY_TYPES : []
+  const subs = mode === 'car' ? CAR_TYPES : mode === 'city' ? CITY_TYPES : mode === 'long' ? LONG_TYPES : []
   return (
     <div className="space-y-3">
       <div className="flex gap-2">
@@ -83,13 +85,14 @@ export function TripList({ ds, onOpen }: { ds: Dataset; onOpen: (t: Trip) => voi
           <option value="">{t('common.allModes')}</option>
           <option value="city">{t('mode.city')}</option>
           <option value="car">{t('mode.car')}</option>
+          <option value="long">{t('mode.long')}</option>
         </select>
         {subs.length > 0 && (
           <select className={`${inputCls} w-auto`} value={sub} onChange={(e) => setSub(e.target.value)}>
             <option value="">{t('common.all')}</option>
             {subs.map((s) => (
               <option key={s} value={s}>
-                {t(mode === 'car' ? `carType.${s}` : `cityType.${s}`)}
+                {subtypeLabel(mode as Mode, s)}
               </option>
             ))}
           </select>
@@ -107,8 +110,16 @@ export function TripList({ ds, onOpen }: { ds: Dataset; onOpen: (t: Trip) => voi
             const driverId = tr.mode === 'car' && tr.carType === 'personal' ? tr.driverId : null
             const companions = tr.companionIds.filter((id) => id !== driverId).map((id) => people.get(id)).filter(Boolean)
             const times = [tr.departureTime, tr.arrivalTime].filter(Boolean).join('–')
+            const actualTimes = tr.mode === 'long' ? [tr.actualDeparture, tr.actualArrival].filter(Boolean).join('–') : ''
             const extra =
-              tr.mode === 'car'
+              tr.mode === 'long'
+                ? [
+                    tr.company,
+                    actualTimes && `${t('field.actual')}: ${actualTimes}`,
+                    tr.delayMin != null && `${t('field.delay')}: ${f.delay(tr.delayMin)}`,
+                    tr.distanceKm ? f.km(tr.distanceKm) : '',
+                  ]
+                : tr.mode === 'car'
                 ? [tr.carType === 'taxi' ? tr.company : tr.driverId && people.get(tr.driverId), tr.distanceKm ? f.km(tr.distanceKm) : '']
                 : [
                     tr.city,
@@ -123,7 +134,7 @@ export function TripList({ ds, onOpen }: { ds: Dataset; onOpen: (t: Trip) => voi
                 </div>
                 <div className="mt-1 flex flex-wrap gap-x-3 text-sm text-slate-500">
                   {times && <span>{times}</span>}
-                  {tr.durationMin !== null && <span>{formatDuration(tr.durationMin)}</span>}
+                  {elapsedMin(tr) != null && <span>{formatDuration(elapsedMin(tr))}</span>}
                   {extra.filter(Boolean).map((x) => (
                     <span key={String(x)}>{x}</span>
                   ))}

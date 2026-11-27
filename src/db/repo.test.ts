@@ -1,5 +1,6 @@
 import { vehicleStats } from '../lib/stats'
 import { beforeEach, describe, expect, it } from 'vitest'
+import { exportCsv, exportJson, parseBackup } from '../lib/backup'
 import { TripsDb } from './db'
 import { dedupe } from './merge'
 import {
@@ -147,5 +148,61 @@ describe('sync merge', () => {
     await saveTrip({ ...emptyDraft('car'), driver: 'A', manufacturer: 'Skoda', model: 'Octavia' }, d)
     const { changed } = dedupe(await loadAll(d))
     expect(Object.values(changed).flat()).toHaveLength(0)
+  })
+})
+
+describe('long-distance trips', () => {
+  const draft = () => ({
+    ...emptyDraft('long'),
+    longType: 'train' as const,
+    company: 'MÁV',
+    lineType: 'InterCity',
+    number: '560',
+    from: 'Budapest-Keleti',
+    to: 'Miskolc-Tiszai',
+    distanceKm: 183,
+    departureTime: '23:00',
+    arrivalTime: '23:50',
+    actualDeparture: '23:05',
+    actualArrival: '00:10',
+    manufacturer: 'Siemens',
+    model: 'Taurus',
+    licence: '470 001',
+  })
+
+  it('stores scheduled and actual durations and a signed delay', async () => {
+    const t = await saveTrip(draft(), d)
+    expect(t).toMatchObject({ mode: 'long', durationMin: 50, actualDurationMin: 65, delayMin: 20 })
+    const early = await saveTrip({ ...draft(), actualArrival: '23:46' }, d)
+    expect(early.mode === 'long' && early.delayMin).toBe(-4)
+    const manual = await saveTrip({ ...draft(), actualDurationMin: 70, actualDurationManual: true }, d)
+    expect(manual.mode === 'long' && manual.actualDurationMin).toBe(70)
+  })
+
+  it('keeps train and coach vehicles apart from each other and from city trips', async () => {
+    await saveTrip(draft(), d)
+    await saveTrip({ ...draft(), longType: 'coach' }, d)
+    await saveTrip({ ...emptyDraft('city'), transitType: 'bus', manufacturer: 'Siemens', model: 'Taurus', licence: '470 001' }, d)
+    const ds = await loadAll(d)
+    expect(ds.vehicleTypes.map((t) => `${t.mode}/${t.subtype}`).sort()).toEqual(['city/bus', 'long/coach', 'long/train'])
+  })
+
+  it('round-trips through the edit draft', async () => {
+    const t = await saveTrip(draft(), d)
+    const ds = await loadAll(d)
+    const back = tripToDraft(t, ds)
+    expect(back).toMatchObject({ lineType: 'InterCity', number: '560', actualArrival: '00:10', licence: '470 001', distanceKm: 183 })
+    const again = await saveTrip({ ...back, actualArrival: '23:50' }, d)
+    expect(again.id).toBe(t.id)
+    expect(again.mode === 'long' && again.delayMin).toBe(0)
+  })
+
+  it('is kept by JSON backup and exported to CSV', async () => {
+    await saveTrip(draft(), d)
+    const ds = await loadAll(d)
+    expect(parseBackup(exportJson(ds)).trips).toHaveLength(1)
+    const csv = exportCsv(ds)
+    expect(csv.split('\n')[0]).toContain('actual_arrival')
+    expect(csv).toContain('InterCity')
   })
 })

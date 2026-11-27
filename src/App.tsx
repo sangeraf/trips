@@ -113,6 +113,9 @@ export default function App() {
               <button className="rounded-full bg-white px-4 py-2 font-medium text-teal-800 shadow-lg dark:bg-slate-700 dark:text-white" onClick={() => openNew('car')}>
                 {t('app.newCar')}
               </button>
+              <button className="rounded-full bg-white px-4 py-2 font-medium text-teal-800 shadow-lg dark:bg-slate-700 dark:text-white" onClick={() => openNew('long')}>
+                {t('app.newLong')}
+              </button>
             </>
           )}
           <button

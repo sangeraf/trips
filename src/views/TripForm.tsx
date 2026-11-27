@@ -5,11 +5,11 @@ import { PeopleSelect } from '../components/PeopleSelect'
 import { TimeInput } from '../components/TimeInput'
 import { btnCls, btnDangerCls, btnGhostCls, Field, inputCls, Segmented } from '../components/ui'
 import { alive, deleteTrip, saveTrip, type TripDraft } from '../db/repo'
-import { BUS_BODY_TYPES, CAR_TYPES, HEV_CARRIAGES, SEAT_COLORS, hasBodyType, CITY_TYPES, plateKind, vehicleSubtype, type Dataset } from '../db/types'
-import { bodyTypeFromText, bodyTypeLabel, carriageFromText, seatColorFromText, seatColorLabel } from '../i18n'
-import { calcDuration, formatDuration, parseDuration, parseTime } from '../lib/duration'
+import { BUS_BODY_TYPES, CAR_TYPES, HEV_CARRIAGES, LONG_TYPES, SEAT_COLORS, hasBodyType, CITY_TYPES, plateKind, vehicleSubtype, type Dataset } from '../db/types'
+import { bodyTypeFromText, bodyTypeLabel, carriageFromText, seatColorFromText, seatColorLabel, useFormat } from '../i18n'
+import { calcDelay, calcDuration, formatDuration, parseDuration, parseTime } from '../lib/duration'
 import { peopleStats } from '../lib/stats'
-import { cityOptions, companyOptions, lineOptions, placeOptions, type Option } from '../lib/suggest'
+import { cityOptions, companyOptions, lineOptions, longOptions, placeOptions, type Option } from '../lib/suggest'
 import { normalize } from '../lib/text'
 
 interface Props {
@@ -35,8 +35,10 @@ function mergeOptions(entries: { value: string; count: number; label?: string; d
 
 export function TripForm({ initial, ds, onClose, onCopy }: Props) {
   const { t } = useTranslation()
+  const f = useFormat()
   const [d, setD] = useState<TripDraft>(initial)
   const [durationText, setDurationText] = useState(initial.durationManual ? formatDuration(initial.durationMin) : '')
+  const [actualText, setActualText] = useState(initial.actualDurationManual ? formatDuration(initial.actualDurationMin) : '')
   const [bodyText, setBodyText] = useState(bodyTypeLabel(initial.bodyType))
   const [seatText, setSeatText] = useState(seatColorLabel(initial.seatColor))
   const [carriageText, setCarriageText] = useState(initial.carriage)
@@ -66,7 +68,17 @@ export function TripForm({ initial, ds, onClose, onCopy }: Props) {
 
   const trips = ds.trips
   const computed = calcDuration(d.departureTime, d.arrivalTime)
+  const computedActual = calcDuration(d.actualDeparture, d.actualArrival)
+  const delay = calcDelay(d.arrivalTime, d.actualArrival)
   const subtype = vehicleSubtype(d)
+  const long = useMemo(
+    () => ({
+      companies: longOptions(trips, 'company', d.longType),
+      lineTypes: longOptions(trips, 'lineType', d.longType, d.company),
+      numbers: longOptions(trips, 'number', d.longType, d.company),
+    }),
+    [trips, d.longType, d.company],
+  )
 
   const places = useMemo(() => placeOptions(trips, d.mode, d.city), [trips, d.mode, d.city])
   const cities = useMemo(() => cityOptions(trips, d.mode), [trips, d.mode])
@@ -116,8 +128,16 @@ export function TripForm({ initial, ds, onClose, onCopy }: Props) {
     setD((s) => ({ ...s, durationManual: text.trim() !== '', durationMin: text.trim() ? parsed : null }))
   }
 
-  const durationInvalid = d.durationManual && d.durationMin === null
-  const timeInvalid = [d.departureTime, d.arrivalTime].some((v) => v !== '' && parseTime(v) === null)
+  const onActualDuration = (text: string) => {
+    setActualText(text)
+    const parsed = parseDuration(text)
+    setD((s) => ({ ...s, actualDurationManual: text.trim() !== '', actualDurationMin: text.trim() ? parsed : null }))
+  }
+  const actualInvalid = d.mode === 'long' && d.actualDurationManual && d.actualDurationMin === null
+  const durationInvalid = (d.durationManual && d.durationMin === null) || actualInvalid
+  const timeInvalid = [d.departureTime, d.arrivalTime, ...(d.mode === 'long' ? [d.actualDeparture, d.actualArrival] : [])].some(
+    (v) => v !== '' && parseTime(v) === null,
+  )
   const hev = useMemo(() => {
     const used = trips.filter((x) => alive(x) && x.mode === 'city' && x.transitType === 'commuter')
     return {
@@ -169,7 +189,15 @@ export function TripForm({ initial, ds, onClose, onCopy }: Props) {
         <input type="date" required className={inputCls} value={d.date} onChange={(e) => set('date', e.target.value)} />
       </Field>
 
-      {d.mode === 'car' ? (
+      {d.mode === 'long' ? (
+        <Field label={t('field.longType')} group>
+          <Segmented
+            value={d.longType}
+            options={LONG_TYPES.map((v) => ({ value: v, label: t(`longType.${v}`) }))}
+            onChange={(v) => set('longType', v)}
+          />
+        </Field>
+      ) : d.mode === 'car' ? (
         <Field label={t('field.carType')} group>
           <Segmented
             value={d.carType}
@@ -204,6 +232,22 @@ export function TripForm({ initial, ds, onClose, onCopy }: Props) {
         </div>
       )}
 
+      {d.mode === 'long' && (
+        <>
+          <Field label={t('field.company')}>
+            <Autocomplete value={d.company} onChange={(v) => set('company', v)} options={long.companies} autoCapitalize="sentences" />
+          </Field>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label={t('field.lineType')}>
+              <Autocomplete value={d.lineType} onChange={(v) => set('lineType', v)} options={long.lineTypes} autoCapitalize="sentences" />
+            </Field>
+            <Field label={t(`field.number${d.longType}`)}>
+              <Autocomplete value={d.number} onChange={(v) => set('number', v)} options={long.numbers} />
+            </Field>
+          </div>
+        </>
+      )}
+
       {isPersonal && (
         <Field label={t('form.driver')}>
           <Autocomplete value={d.driver} onChange={(v) => set('driver', v)} options={people} autoCapitalize="sentences" />
@@ -229,6 +273,7 @@ export function TripForm({ initial, ds, onClose, onCopy }: Props) {
         </Field>
       </div>
 
+      {d.mode === 'long' && <h3 className="text-sm font-semibold text-slate-600 dark:text-slate-300">{t('field.scheduled')}</h3>}
       <div className="grid grid-cols-3 gap-3">
         <Field label={t('field.departure')}>
           <TimeInput value={d.departureTime} onChange={(v) => set('departureTime', v)} />
@@ -252,7 +297,39 @@ export function TripForm({ initial, ds, onClose, onCopy }: Props) {
         </button>
       )}
 
-      {d.mode === 'car' && (
+      {d.mode === 'long' && (
+        <>
+          <h3 className="text-sm font-semibold text-slate-600 dark:text-slate-300">{t('field.actual')}</h3>
+          <div className="grid grid-cols-3 gap-3">
+            <Field label={t('field.departure')}>
+              <TimeInput value={d.actualDeparture} onChange={(v) => set('actualDeparture', v)} />
+            </Field>
+            <Field label={t('field.arrival')}>
+              <TimeInput value={d.actualArrival} onChange={(v) => set('actualArrival', v)} />
+            </Field>
+            <Field label={t('field.duration')}>
+              <input
+                className={`${inputCls} ${actualInvalid ? '!border-red-500' : ''}`}
+                inputMode="numeric"
+                placeholder={computedActual !== null ? formatDuration(computedActual) : t('form.durationHint')}
+                value={d.actualDurationManual ? actualText : formatDuration(computedActual)}
+                onChange={(e) => onActualDuration(e.target.value)}
+              />
+            </Field>
+          </div>
+          {d.actualDurationManual && computedActual !== null && (
+            <button type="button" className="text-sm text-teal-700 dark:text-teal-400" onClick={() => onActualDuration('')}>
+              ↺ {t('form.useCalculated', { value: formatDuration(computedActual) })}
+            </button>
+          )}
+          <p className="text-sm text-slate-600 dark:text-slate-300">
+            {t('field.delay')}:{' '}
+            <strong className={delay != null && delay > 0 ? 'text-red-600' : ''}>{delay == null ? '—' : f.delay(delay)}</strong>
+          </p>
+        </>
+      )}
+
+      {d.mode !== 'city' && (
         <Field label={t('field.distance')}>
           <input
             type="number"

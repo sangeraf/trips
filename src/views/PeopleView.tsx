@@ -5,7 +5,7 @@ import { SortToggle } from '../components/SortToggle'
 import { btnCls, btnDangerCls, btnGhostCls, Card, Empty, Field, inputCls, Section, Segmented } from '../components/ui'
 import { deleteRecord, findPersonCollision, renamePerson } from '../db/repo'
 import type { Dataset } from '../db/types'
-import { useFormat } from '../i18n'
+import { useFormat, lineLabel } from '../i18n'
 import { avgMin, groupBy, lineKey, one, peopleStats, RANKS, routeKey, sortAgg, type PersonStats, type SortBy } from '../lib/stats'
 
 export function PeopleView({ ds }: { ds: Dataset }) {
@@ -34,6 +34,11 @@ export function PeopleView({ ds }: { ds: Dataset }) {
             <span>
               {t('mode.car')}: {s.perMode.car}
             </span>
+            {s.perMode.long > 0 && (
+              <span>
+                {t('mode.long')}: {s.perMode.long}
+              </span>
+            )}
             {s.driven > 0 && <span>{t('people.drove', { count: s.driven })}</span>}
           </div>
         </Card>
@@ -52,7 +57,7 @@ function PersonDetail({ s, ds, onBack }: { s: PersonStats; ds: Dataset; onBack: 
     return {
       lines: groupBy(trips, (x) => {
         const k = lineKey(x)
-        return k && x.mode === 'city' ? one(k[0].key, `${t(`cityTypeShort.${x.transitType}`)} ${x.line}${x.city ? ` · ${x.city}` : ''}`) : null
+        return k ? one(k[0].key, lineLabel(x, t)) : null
       }),
       routes: groupBy(trips, routeKey),
     }
@@ -79,7 +84,7 @@ function PersonDetail({ s, ds, onBack }: { s: PersonStats; ds: Dataset; onBack: 
       />
       <Section title={t('stats.byMode')}>
         <Card className="text-sm">
-          {t('mode.city')}: {s.perMode.city} · {t('mode.car')}: {s.perMode.car}
+          {t('mode.city')}: {s.perMode.city} · {t('mode.car')}: {s.perMode.car} · {t('mode.long')}: {s.perMode.long}
           {s.first && <div className="mt-1 text-slate-500">{f.date(s.first)} – {f.date(s.last)}</div>}
         </Card>
       </Section>

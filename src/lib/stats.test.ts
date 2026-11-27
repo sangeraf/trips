@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { avgMin, sortAgg, type Agg } from './stats'
+import type { Trip } from '../db/types'
+import { avgMin, delayStats, elapsedMin, lineKey, sortAgg, type Agg } from './stats'
 
 const agg = (label: string, count: number, minutes: number, timed = count): Agg => ({ key: label, label, count, minutes, timed, km: 0, first: '', last: '' })
 
@@ -18,5 +19,22 @@ describe('sortAgg', () => {
     expect(avgMin(l[2])).toBeNull()
     expect(sortAgg(l, 'avgAsc').map((a) => a.label)).toEqual(['d', 'a', 'b', 'c'])
     expect(sortAgg(l, 'avgDesc').map((a) => a.label)).toEqual(['b', 'a', 'd', 'c'])
+  })
+})
+
+describe('long-distance stats', () => {
+  const trip = (number: string, delayMin: number | null, actualDurationMin: number | null = null) =>
+    ({ mode: 'long', longType: 'train', company: 'MÁV', lineType: 'IC', number, delayMin, durationMin: 60, actualDurationMin }) as Trip
+  it('uses the actual duration for elapsed time when known', () => {
+    expect(elapsedMin(trip('1', null, 75))).toBe(75)
+    expect(elapsedMin(trip('1', null))).toBe(60)
+  })
+  it('groups lines by company, type and number', () => {
+    expect(lineKey(trip('560', 0))?.[0].label).toBe('IC 560')
+  })
+  it('averages delays, counts on-time trips and ranks lines by average delay', () => {
+    const s = delayStats([trip('1', 10), trip('1', 20), trip('2', -2), trip('2', 5), trip('3', null)], (t) => (t.mode === 'long' ? t.number : ''))
+    expect(s).toMatchObject({ count: 4, avg: 8.25, onTime: 2, max: 20 })
+    expect(s.byLine.map((l) => [l.label, l.avg])).toEqual([['1', 15], ['2', 1.5]])
   })
 })

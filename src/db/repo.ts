@@ -1,4 +1,4 @@
-import { calcDuration } from '../lib/duration'
+import { calcDelay, calcDuration } from '../lib/duration'
 import { clean, newId, normalize, todayIso } from '../lib/text'
 import { db, emitLocalChange, type TripsDb } from './db'
 import { dedupe, mergeDatasets, personKey, typeKey, unitKey } from './merge'
@@ -6,6 +6,7 @@ import {
   vehicleSubtype,
   type CarType,
   type CityType,
+  type LongType,
   type Dataset,
   type Mode,
   type Person,
@@ -45,6 +46,13 @@ export interface TripDraft {
   to: string
   carriage: string
   seatColor: string
+  longType: LongType
+  lineType: string
+  number: string
+  actualDeparture: string
+  actualArrival: string
+  actualDurationMin: number | null
+  actualDurationManual: boolean
 }
 
 export function emptyDraft(mode: Mode): TripDraft {
@@ -74,6 +82,13 @@ export function emptyDraft(mode: Mode): TripDraft {
     to: '',
     carriage: '',
     seatColor: '',
+    longType: 'train',
+    lineType: '',
+    number: '',
+    actualDeparture: '',
+    actualArrival: '',
+    actualDurationMin: null,
+    actualDurationManual: false,
   }
 }
 
@@ -121,6 +136,22 @@ export function tripToDraft(trip: Trip, ds: Pick<Dataset, 'vehicleTypes' | 'vehi
       distanceKm: trip.distanceKm,
       city: trip.city,
       company: trip.company,
+    }
+  }
+  if (trip.mode === 'long') {
+    return {
+      ...common,
+      longType: trip.longType,
+      company: trip.company,
+      lineType: trip.lineType,
+      number: trip.number,
+      from: trip.from,
+      to: trip.to,
+      distanceKm: trip.distanceKm,
+      actualDeparture: trip.actualDeparture,
+      actualArrival: trip.actualArrival,
+      actualDurationMin: trip.actualDurationMin,
+      actualDurationManual: trip.actualDurationManual,
     }
   }
   return {
@@ -218,8 +249,27 @@ export async function saveTrip(draft: TripDraft, d: TripsDb = db): Promise<Trip>
       companionIds,
       notes: draft.notes.trim(),
     }
+    const actualComputed = calcDuration(draft.actualDeparture, draft.actualArrival)
+    const actualManual = draft.actualDurationManual && draft.actualDurationMin !== null
     const t: Trip =
-      draft.mode === 'car'
+      draft.mode === 'long'
+        ? {
+            ...base,
+            mode: 'long',
+            longType: draft.longType,
+            company: clean(draft.company),
+            lineType: clean(draft.lineType),
+            number: clean(draft.number),
+            from: clean(draft.from),
+            to: clean(draft.to),
+            distanceKm: draft.distanceKm,
+            actualDeparture: draft.actualDeparture,
+            actualArrival: draft.actualArrival,
+            actualDurationMin: actualManual ? draft.actualDurationMin : actualComputed,
+            actualDurationManual: actualManual,
+            delayMin: calcDelay(draft.arrivalTime, draft.actualArrival),
+          }
+        : draft.mode === 'car'
         ? {
             ...base,
             mode: 'car',
