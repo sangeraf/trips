@@ -171,7 +171,7 @@ export function StatsView({ ds }: { ds: Dataset }) {
             s.months.map((m, i) => ({
               agg: m,
               label: f.month(m.key),
-              sub: multiYear ? (i === 0 || m.key.endsWith('-01') ? m.key.slice(0, 4) : '') : undefined,
+              sub: multiYear ? (i === 0 || s.months[i - 1].key.slice(0, 4) !== m.key.slice(0, 4) ? m.key.slice(0, 4) : '') : undefined,
             })),
           )
         ) : (

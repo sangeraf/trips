@@ -127,8 +127,8 @@ export function byMonth(trips: Trip[]): Agg[] {
 export function byWeekday(trips: Trip[]): Agg[] {
   const days = Array.from({ length: 7 }, (_, i) => emptyAgg(String(i), ''))
   for (const t of trips) {
-    if (!t.date) continue
-    add(days[(new Date(`${t.date}T12:00:00`).getDay() + 6) % 7], t)
+    const day = days[(new Date(`${t.date}T12:00:00`).getDay() + 6) % 7]
+    if (day) add(day, t)
   }
   return days
 }

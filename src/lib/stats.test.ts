@@ -46,7 +46,7 @@ describe('long-distance stats', () => {
 describe('byWeekday', () => {
   it('buckets trips Monday first and keeps empty days', () => {
     const d = (date: string) => ({ date, mode: 'city', durationMin: 10 }) as unknown as Trip
-    const w = byWeekday([d('2026-11-23'), d('2026-11-29'), d('2026-11-30')])
+    const w = byWeekday([d('2026-11-23'), d('2026-11-29'), d('2026-11-30'), d('2026-13-01'), d('')])
     expect(w.map((x) => x.count)).toEqual([2, 0, 0, 0, 0, 0, 1])
   })
 })
