@@ -75,6 +75,7 @@ export function TripForm({ initial, ds, onClose, onCopy }: Props) {
     () => ({
       companies: longOptions(trips, 'company', d.longType),
       lineTypes: longOptions(trips, 'lineType', d.longType, d.company),
+      lineNames: longOptions(trips, 'lineName', d.longType, d.company),
       numbers: longOptions(trips, 'number', d.longType, d.company),
     }),
     [trips, d.longType, d.company],
@@ -234,12 +235,17 @@ export function TripForm({ initial, ds, onClose, onCopy }: Props) {
 
       {d.mode === 'long' && (
         <>
-          <Field label={t('field.company')}>
-            <Autocomplete value={d.company} onChange={(v) => set('company', v)} options={long.companies} autoCapitalize="sentences" />
-          </Field>
           <div className="grid grid-cols-2 gap-3">
+            <Field label={t('field.company')}>
+              <Autocomplete value={d.company} onChange={(v) => set('company', v)} options={long.companies} autoCapitalize="sentences" />
+            </Field>
             <Field label={t('field.lineType')}>
               <Autocomplete value={d.lineType} onChange={(v) => set('lineType', v)} options={long.lineTypes} autoCapitalize="sentences" />
+            </Field>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label={t('field.lineName')}>
+              <Autocomplete value={d.lineName} onChange={(v) => set('lineName', v)} options={long.lineNames} autoCapitalize="sentences" />
             </Field>
             <Field label={t(`field.number${d.longType}`)}>
               <Autocomplete value={d.number} onChange={(v) => set('number', v)} options={long.numbers} />

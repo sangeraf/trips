@@ -48,6 +48,7 @@ export interface TripDraft {
   seatColor: string
   longType: LongType
   lineType: string
+  lineName: string
   number: string
   actualDeparture: string
   actualArrival: string
@@ -84,6 +85,7 @@ export function emptyDraft(mode: Mode): TripDraft {
     seatColor: '',
     longType: 'train',
     lineType: '',
+    lineName: '',
     number: '',
     actualDeparture: '',
     actualArrival: '',
@@ -144,6 +146,7 @@ export function tripToDraft(trip: Trip, ds: Pick<Dataset, 'vehicleTypes' | 'vehi
       longType: trip.longType,
       company: trip.company,
       lineType: trip.lineType,
+      lineName: trip.lineName ?? '',
       number: trip.number,
       from: trip.from,
       to: trip.to,
@@ -259,6 +262,7 @@ export async function saveTrip(draft: TripDraft, d: TripsDb = db): Promise<Trip>
             longType: draft.longType,
             company: clean(draft.company),
             lineType: clean(draft.lineType),
+            lineName: clean(draft.lineName),
             number: clean(draft.number),
             from: clean(draft.from),
             to: clean(draft.to),

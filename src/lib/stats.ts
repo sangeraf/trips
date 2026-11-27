@@ -67,9 +67,10 @@ export const subtypeOf = (t: Trip) => (t.mode === 'car' ? t.carType : t.mode ===
 
 export function lineKey(t: Trip) {
   if (t.mode === 'long') {
-    if (!t.lineType && !t.number) return null
-    const label = `${t.lineType} ${t.number}`.trim()
-    return one(`long|${t.longType}|${normalize(t.company)}|${normalize(label)}`, label)
+    const name = t.lineName ?? ''
+    if (!t.company && !t.lineType && !name) return null
+    const label = [t.company, t.lineType, name].filter(Boolean).join(' ')
+    return one(`long|${t.longType}|${normalize(t.company)}|${normalize(t.lineType)}|${normalize(name)}`, label)
   }
   if (t.mode !== 'city' || !t.line) return null
   return one(`${t.city.toLowerCase()}|${t.transitType}|${t.line.toLowerCase()}`, t.line)
@@ -205,25 +206,32 @@ export function vehicleStats(ds: Pick<Dataset, 'trips' | 'vehicleTypes' | 'vehic
 /** Average minutes per timed trip, or null when no trip has a duration. */
 export const avgMin = (a: Agg) => (a.timed ? a.minutes / a.timed : null)
 
+/** The number a ranking is ordered by. */
+export const rankValue = (a: Agg, by: RankBy) =>
+  by === 'count' ? a.count : by === 'time' ? a.minutes : by === 'distance' ? a.km : (avgMin(a) ?? 0)
+
 export const RANKS = ['count', 'time', 'avgAsc', 'avgDesc'] as const
-export type RankBy = (typeof RANKS)[number]
+/** Stats page ranks; distance ignores city transport, which has no distance. */
+export const STATS_RANKS = [...RANKS, 'distance'] as const
+export type RankBy = (typeof STATS_RANKS)[number]
 export const SORTS = ['abc', ...RANKS] as const
 export type SortBy = (typeof SORTS)[number]
 
 /** A–Z ascending (unnamed last), count / time descending, or average either way (no average last). */
-export function sortAgg<T extends Agg>(list: T[], by: SortBy): T[] {
+export function sortAgg<T extends Agg>(list: T[], by: SortBy | 'distance'): T[] {
   const avg = (dir: number) => (a: T, b: T) => {
     const x = avgMin(a)
     const y = avgMin(b)
     if (x == null || y == null) return (x == null ? 1 : 0) - (y == null ? 1 : 0) || b.count - a.count
     return dir * (x - y) || b.count - a.count
   }
-  const cmp: Record<SortBy, (a: T, b: T) => number> = {
+  const cmp: Record<SortBy | 'distance', (a: T, b: T) => number> = {
     abc: (a, b) => (!a.label ? 1 : 0) - (!b.label ? 1 : 0) || a.label.localeCompare(b.label, i18n.language, { numeric: true }),
     count: (a, b) => b.count - a.count || b.minutes - a.minutes,
     time: (a, b) => b.minutes - a.minutes || b.count - a.count,
     avgAsc: avg(1),
     avgDesc: avg(-1),
+    distance: (a, b) => b.km - a.km || b.count - a.count,
   }
   return [...list].sort(cmp[by])
 }

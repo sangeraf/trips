@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { avgMin, sortAgg, type Agg, type RankBy } from '../lib/stats'
+import { rankValue, sortAgg, type Agg, type RankBy } from '../lib/stats'
 import { useFormat } from '../i18n'
 import { Card } from './ui'
 
@@ -25,7 +25,7 @@ export function BarList({
   const { t } = useTranslation()
   const f = useFormat()
   const rank = countOnly ? 'count' : by
-  const metric = (a: Agg) => (rank === 'count' ? a.count : rank === 'time' ? a.minutes : (avgMin(a) ?? 0))
+  const metric = (a: Agg) => rankValue(a, rank)
   const sorted = rank === 'count' ? items : sortAgg(items, rank)
   const top = sorted.slice(0, limit)
   const max = Math.max(1, ...top.map(metric))
@@ -37,7 +37,7 @@ export function BarList({
           <div className="flex items-baseline justify-between gap-2 text-sm">
             <span className="min-w-0 break-words font-medium">{a.label || '—'}</span>
             <span className="shrink-0 text-slate-500">
-              {countOnly ? `${a.count}×` : f.agg(a, showKm)}
+              {countOnly ? `${a.count}×` : f.agg(a, showKm || rank === 'distance')}
             </span>
           </div>
           <div className="mt-1 h-1.5 rounded bg-slate-100 dark:bg-slate-700">

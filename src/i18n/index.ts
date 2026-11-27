@@ -61,7 +61,7 @@ export function subtypeLabel(mode: Mode, sub: string, short = false): string {
 /** A line as shown in rankings: "Villamos 4 · Budapest", "InterCity 560 · MÁV". */
 export function lineLabel(t: Trip, tr: (key: string) => string = (k) => i18n.t(k)): string {
   if (t.mode === 'city') return `${tr(`cityTypeShort.${t.transitType}`)} ${t.line}${t.city ? ` · ${t.city}` : ''}`
-  if (t.mode === 'long') return [`${t.lineType} ${t.number}`.trim(), t.company].filter(Boolean).join(' · ')
+  if (t.mode === 'long') return [t.company, t.lineType, t.lineName].filter(Boolean).join(' ')
   return ''
 }
 

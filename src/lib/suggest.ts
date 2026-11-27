@@ -81,13 +81,13 @@ export function lineOptions(trips: Trip[], city: string, transitType: string): O
   )
 }
 
-/** Long-distance company, line type or number; values from the same train/coach type come first. */
-export function longOptions(trips: Trip[], field: 'company' | 'lineType' | 'number', longType: string, company = ''): Option[] {
+/** Long-distance company, line type, line name or service number; values from the same train/coach type come first. */
+export function longOptions(trips: Trip[], field: 'company' | 'lineType' | 'lineName' | 'number', longType: string, company = ''): Option[] {
   const c = normalize(company)
   return countValues(
     sameMode(trips, 'long').flatMap((t) =>
       t.mode === 'long'
-        ? [{ value: t[field], boost: boostIf(t.longType === longType) + boostIf(!!c && field !== 'company' && normalize(t.company) === c) }]
+        ? [{ value: t[field] ?? '', boost: boostIf(t.longType === longType) + boostIf(!!c && field !== 'company' && normalize(t.company) === c) }]
         : [],
     ),
   )

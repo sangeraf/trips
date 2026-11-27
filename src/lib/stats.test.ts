@@ -23,17 +23,21 @@ describe('sortAgg', () => {
 })
 
 describe('long-distance stats', () => {
-  const trip = (number: string, delayMin: number | null, actualDurationMin: number | null = null) =>
-    ({ mode: 'long', longType: 'train', company: 'MÁV', lineType: 'IC', number, delayMin, durationMin: 60, actualDurationMin }) as Trip
+  const trip = (lineName: string, delayMin: number | null, actualDurationMin: number | null = null, number = '1') =>
+    ({ mode: 'long', longType: 'train', company: 'MÁV', lineType: 'IC', lineName, number, delayMin, durationMin: 60, actualDurationMin }) as Trip
   it('uses the actual duration for elapsed time when known', () => {
     expect(elapsedMin(trip('1', null, 75))).toBe(75)
     expect(elapsedMin(trip('1', null))).toBe(60)
   })
-  it('groups lines by company, type and number', () => {
-    expect(lineKey(trip('560', 0))?.[0].label).toBe('IC 560')
+  it('groups lines by company, type and line name, never by service number', () => {
+    expect(lineKey(trip('Tokaj', 0, null, '236'))?.[0]).toEqual(lineKey(trip('Tokaj', 5, null, '238'))?.[0])
+    expect(lineKey(trip('Tokaj', 0))?.[0].label).toBe('MÁV IC Tokaj')
+    expect(lineKey(trip('', 0))?.[0].label).toBe('MÁV IC')
+    expect(lineKey({ ...trip('', 0), lineType: '' } as Trip)?.[0].label).toBe('MÁV')
+    expect(lineKey(trip('Tokaj', 0))?.[0].key).not.toBe(lineKey(trip('Hernád', 0))?.[0].key)
   })
   it('averages delays, counts on-time trips and ranks lines by average delay', () => {
-    const s = delayStats([trip('1', 10), trip('1', 20), trip('2', -2), trip('2', 5), trip('3', null)], (t) => (t.mode === 'long' ? t.number : ''))
+    const s = delayStats([trip('1', 10), trip('1', 20), trip('2', -2), trip('2', 5), trip('3', null)], (t) => (t.mode === 'long' ? t.lineName : ''))
     expect(s).toMatchObject({ count: 4, avg: 8.25, onTime: 2, max: 20 })
     expect(s.byLine.map((l) => [l.label, l.avg])).toEqual([['1', 15], ['2', 1.5]])
   })
